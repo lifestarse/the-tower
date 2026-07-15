@@ -18,6 +18,7 @@ import sys
 import time
 
 import numpy as np
+import cv2
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')      # console may default to cp1251
@@ -35,10 +36,16 @@ CLAIM = 'templates/claim_list.png'    # the word CLAIM inside a mission button
 STAR = (843, 404)        # ★ menu button -> Event / Missions
 RETURN = (450, 1515)     # "Tap To Return To Game" footer
 REVEAL = (450, 400)      # empty battlefield -> toggles the UI on
-SWIPE = (450, 1250, 450, 620, 400)    # scroll the list down one page
+SCROLL_DOWN = (450, 1250, 450, 620, 400)   # reveal items further down the list
+SCROLL_UP = (450, 620, 450, 1250, 400)     # reveal items further up (toward top)
 LIST_TOP, LIST_BOTTOM = 330, 1450     # y-band of the scrollable list
 CLAIM_THRESHOLD = 0.85
 MAX_SCROLLS = 25
+MAX_SWEEPS = 8
+
+# The blue "N" badge at the star's top-left means there are rewards to claim.
+BADGE_ROI = (775, 360, 850, 415)      # region that holds the badge (menu open)
+BADGE_MIN_PIXELS = 80                 # blue-purple pixels needed to call it present
 
 
 def _similar(a, b, tol=3.0):
@@ -51,6 +58,26 @@ def _similar(a, b, tol=3.0):
 def _claims_in_view(device):
     hits = find_all_templates(device.capture(), CLAIM, threshold=CLAIM_THRESHOLD)
     return [h for h in hits if LIST_TOP <= h.center[1] <= LIST_BOTTOM]
+
+
+def _badge_present(image):
+    """True if the star shows its blue reward badge (rewards are claimable)."""
+    x0, y0, x1, y1 = BADGE_ROI
+    roi = np.array(image.convert('RGB'))[y0:y1, x0:x1]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
+    mask = ((hsv[:, :, 0] >= 100) & (hsv[:, :, 0] <= 140) &
+            (hsv[:, :, 1] > 90) & (hsv[:, :, 2] > 110))
+    return int(mask.sum()) >= BADGE_MIN_PIXELS
+
+
+def _scroll_to_top(device):
+    """The list caches its scroll position, so start from the very top."""
+    for _ in range(MAX_SCROLLS):
+        before = device.capture()
+        device.swipe_xy(*SCROLL_UP)
+        time.sleep(0.5)
+        if _similar(before, device.capture()):
+            return
 
 
 def main(logger=print, device_id=DEVICE_ID):
@@ -67,38 +94,53 @@ def main(logger=print, device_id=DEVICE_ID):
     if find_template(device.capture(), UI_SHOWN, threshold=0.8) is None:
         log('WARN: UI panel not detected; continuing anyway')
 
-    # 2. open Event / Missions
-    log('opening Event (star menu button)')
+    # 2. gate on the star's reward badge — no blue badge means nothing to claim
+    if not _badge_present(device.capture()):
+        log('no reward badge on the star — nothing to claim')
+        return 0
+
+    # 3. open Event / Missions
+    log('reward badge present -> opening Event (star menu button)')
     device.tap_xy(*STAR)
     time.sleep(1.2)
 
-    # 3. claim everything, scrolling down until the list stops moving
+    # 3-4. Sweep the list top -> bottom claiming everything. Claiming a mission
+    # reveals its next tier (which may itself be completed), so repeat whole
+    # sweeps until one claims nothing.
     total = 0
-    for _ in range(MAX_SCROLLS):
-        # claim all currently visible (several passes: the list refreshes in place)
-        for _pass in range(4):
-            hits = _claims_in_view(device)
-            if not hits:
-                break
-            for h in sorted(hits, key=lambda m: m.center[1]):
-                device.tap_xy(h.center[0], h.center[1])
-                total += 1
-                log('CLAIM at %s (conf %.2f)' % (h.center, h.confidence))
-                time.sleep(0.35)
-
-        before = device.capture()
-        device.swipe_xy(*SWIPE)
-        time.sleep(0.7)
-        if _similar(before, device.capture()):
-            log('reached the bottom of the list')
+    for sweep in range(MAX_SWEEPS):
+        _scroll_to_top(device)          # the tab remembers its scroll position
+        swept = 0
+        for _ in range(MAX_SCROLLS):
+            for _pass in range(4):      # list refreshes in place after each claim
+                hits = _claims_in_view(device)
+                if not hits:
+                    break
+                for h in sorted(hits, key=lambda m: m.center[1]):
+                    device.tap_xy(h.center[0], h.center[1])
+                    swept += 1
+                    log('CLAIM at %s (conf %.2f)' % (h.center, h.confidence))
+                    time.sleep(0.35)
+            before = device.capture()
+            device.swipe_xy(*SCROLL_DOWN)
+            time.sleep(0.7)
+            if _similar(before, device.capture()):
+                break               # bottom of the list
+        total += swept
+        if swept == 0:
             break
+        log('sweep %d: +%d claimed, re-checking from the top' % (sweep + 1, swept))
 
     log('claimed %d reward(s)' % total)
 
-    # 4. back to the game
+    # 5. back to the main game screen
     device.tap_xy(*RETURN)
-    time.sleep(0.6)
+    time.sleep(0.8)
+    if find_template(device.capture(), UI_SHOWN, threshold=0.8) is None:
+        device.back()          # fallback if still on an overlay
+        time.sleep(0.6)
     log('done')
+    return total
 
 
 if __name__ == '__main__':

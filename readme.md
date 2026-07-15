@@ -141,10 +141,18 @@ A themed control panel:
 ### Claim-all (event missions)
 
 `claim_all.py` is a one-shot macro (not a reactive scenario) that recreates the
-manual flow: reveal the UI → tap the ★ menu → **Event / Missions** → tap every
-**CLAIM** button, **scrolling down** until the bottom, then return to the game.
-It matches the CLAIM buttons by image (so it claims whatever is completable) and
-stops when the list no longer scrolls.
+manual flow:
+
+1. reveal the UI, then check the **star's blue reward badge** — if it's absent,
+   there are no rewards and it stops immediately.
+2. open the ★ menu → **Event / Missions**.
+3. **scroll to the top first** (the tab caches its scroll position, so rewards
+   can be sitting above where it reopens), then sweep down claiming every
+   **CLAIM** button. Claiming reveals the next tier, so it repeats whole sweeps
+   until one claims nothing.
+4. return to the **main game screen**.
+
+CLAIM buttons are matched by image, so it claims whatever is completable.
 
 ```shell
 python claim_all.py
