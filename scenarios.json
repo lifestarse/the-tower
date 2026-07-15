@@ -1,0 +1,17 @@
+{
+  "device_id": "emulator-5554",
+  "app_package": "com.TechTreeGames.TheTower",
+  "require_foreground": true,
+  "scenarios": [
+    {
+      "name": "claim gems",
+      "template": "templates/claim.png",
+      "enabled": true,
+      "threshold": 0.8,
+      "interval": 1.0,
+      "cooldown": 0.5,
+      "multi_scale": true,
+      "action": "tap"
+    }
+  ]
+}

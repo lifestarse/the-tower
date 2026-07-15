@@ -81,6 +81,46 @@ built-in self-test that needs no device or game:
 python image_recognition.py      # -> "image_recognition self-test OK ..."
 ```
 
+## Scenarios & UI
+
+A **scenario** pairs a template with settings and says "whenever this appears,
+tap it". Each scenario has its **own check interval** (default 1s), match
+threshold, tap cooldown, and enabled flag. Scenarios live in `scenarios.json`
+and every check/tap is printed to the console.
+
+Ships with one scenario: tap the **CLAIM** gem button (`templates/claim.png`)
+whenever it shows up.
+
+### Console
+
+```shell
+python run_scenarios.py            # runs scenarios.json, logs every action, Ctrl+C to stop
+```
+
+Example log:
+
+```
+[12:39:26] engine started: 1 active scenario(s): claim gems
+[12:39:26] check  claim gems         FOUND conf=1.000 at (556, 282)
+[12:39:26]   TAP   claim gems at (556, 282)
+```
+
+### UI (tkinter)
+
+```shell
+python scenario_ui.py
+```
+
+- Table of scenarios — Add / Edit / Duplicate / Remove, reorder with ↑ / ↓.
+- Edit dialog: name, template (Browse), check interval, threshold, tap cooldown,
+  action (tap / log-only), enabled, multi-scale.
+- **Start / Stop** the engine; a live log shows every check and tap.
+- **Screenshot** button grabs the device screen to `screen.png` for cropping new
+  templates. **Save** writes back to `scenarios.json`.
+
+The engine (`automation_engine.py`) is shared by both and is device-agnostic, so
+it can be unit-tested with a fake device — no emulator required.
+
 ## Demo Video
 To be updated
 
