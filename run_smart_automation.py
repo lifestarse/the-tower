@@ -19,7 +19,7 @@ import time
 from android_device import AndroidDevice
 from image_recognition import TemplateLibrary, locate_and_tap, multi_scale
 
-DEVICE_ID = 'emulator-5554'
+DEVICE_ID = '127.0.0.1:5555'   # BlueStacks 5 default; 'emulator-5554' for a stock AVD
 APP_PACKAGE = 'com.TechTreeGames.TheTower'
 THRESHOLD = 0.82
 

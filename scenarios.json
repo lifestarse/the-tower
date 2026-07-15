@@ -1,5 +1,5 @@
 {
-  "device_id": "emulator-5554",
+  "device_id": "127.0.0.1:5555",
   "app_package": "com.TechTreeGames.TheTower",
   "require_foreground": true,
   "scenarios": [

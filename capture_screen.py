@@ -11,7 +11,7 @@ import sys
 
 from android_device import AndroidDevice
 
-DEVICE_ID = 'emulator-5554'
+DEVICE_ID = '127.0.0.1:5555'   # BlueStacks 5 default; 'emulator-5554' for a stock AVD
 
 
 def main():

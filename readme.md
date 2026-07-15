@@ -2,8 +2,17 @@
 
 ## Environment
 - Python 3.10
-- BlueStacks 5 (Portrait / 720x1280)
+- BlueStacks 5, portrait (resolution is auto-detected — tested at 900x1600)
 - Android Debug Bridge (from platform-tools_r32.0.0-windows)
+
+### Connecting to BlueStacks
+BlueStacks is a *networked* emulator reached over TCP, not a stock AVD:
+1. BlueStacks → Settings → **Advanced → Android Debug Bridge** → enable it. It
+   shows a port (usually `127.0.0.1:5555`).
+2. `adb connect 127.0.0.1:5555`, then confirm with `adb devices`.
+3. Set that as `device_id` in `scenarios.json` (already defaulted to
+   `127.0.0.1:5555`). `android_device.py` auto-runs `adb connect` for any
+   `host:port` device, and never `kill-server`s (which would drop the link).
 
 ## Python packages
 - pure-python-adb 0.3.0.dev0
