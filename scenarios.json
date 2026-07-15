@@ -12,6 +12,66 @@
       "cooldown": 0.5,
       "multi_scale": true,
       "action": "tap"
+    },
+    {
+      "name": "reveal ui",
+      "template": "",
+      "unless": "templates/ui_shown.png",
+      "points": [[450, 400]],
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 1.0,
+      "cooldown": 2.0,
+      "multi_scale": false,
+      "action": "tap"
+    },
+    {
+      "name": "upgrade attack",
+      "template": "",
+      "when": "templates/hdr_attack.png",
+      "points": [[230, 1130], [665, 1130], [230, 1300], [665, 1300], [230, 1465], [665, 1465]],
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 0.4,
+      "multi_scale": false,
+      "action": "tap"
+    },
+    {
+      "name": "upgrade defense",
+      "template": "",
+      "when": "templates/hdr_defense.png",
+      "points": [[230, 1130], [665, 1130], [230, 1300], [665, 1300], [230, 1465], [665, 1465]],
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 0.4,
+      "multi_scale": false,
+      "action": "tap"
+    },
+    {
+      "name": "switch to defense",
+      "template": "",
+      "when": "templates/hdr_attack.png",
+      "points": [[335, 1550]],
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 6.0,
+      "multi_scale": false,
+      "action": "tap"
+    },
+    {
+      "name": "switch to attack",
+      "template": "",
+      "when": "templates/hdr_defense.png",
+      "points": [[112, 1550]],
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 6.0,
+      "multi_scale": false,
+      "action": "tap"
     }
   ]
 }

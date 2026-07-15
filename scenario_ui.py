@@ -28,6 +28,9 @@ class ScenarioDialog(tk.Toplevel):
 
         self.v_name = tk.StringVar(value=s.name)
         self.v_template = tk.StringVar(value=s.template)
+        self.v_when = tk.StringVar(value=s.when)
+        self.v_unless = tk.StringVar(value=s.unless)
+        self.v_points = tk.StringVar(value=self._points_to_str(s.points))
         self.v_enabled = tk.BooleanVar(value=s.enabled)
         self.v_threshold = tk.DoubleVar(value=s.threshold)
         self.v_interval = tk.DoubleVar(value=s.interval)
@@ -47,8 +50,24 @@ class ScenarioDialog(tk.Toplevel):
         label('Template')
         ttk.Entry(self, textvariable=self.v_template, width=26)\
             .grid(row=row, column=1, sticky='we', **pad)
-        ttk.Button(self, text='Browse…', command=self._browse)\
+        ttk.Button(self, text='Browse…', command=lambda: self._browse(self.v_template))\
             .grid(row=row, column=2, **pad); row += 1
+
+        label('When visible (gate)')
+        ttk.Entry(self, textvariable=self.v_when, width=26)\
+            .grid(row=row, column=1, sticky='we', **pad)
+        ttk.Button(self, text='Browse…', command=lambda: self._browse(self.v_when))\
+            .grid(row=row, column=2, **pad); row += 1
+
+        label('Unless visible')
+        ttk.Entry(self, textvariable=self.v_unless, width=26)\
+            .grid(row=row, column=1, sticky='we', **pad)
+        ttk.Button(self, text='Browse…', command=lambda: self._browse(self.v_unless))\
+            .grid(row=row, column=2, **pad); row += 1
+
+        label('Tap points  x,y; x,y')
+        ttk.Entry(self, textvariable=self.v_points, width=26)\
+            .grid(row=row, column=1, columnspan=2, sticky='we', **pad); row += 1
 
         label('Check interval (s)')
         ttk.Spinbox(self, textvariable=self.v_interval, from_=0.1, to=3600, increment=0.5,
@@ -81,7 +100,22 @@ class ScenarioDialog(tk.Toplevel):
         self.wait_visibility()
         self.focus()
 
-    def _browse(self):
+    @staticmethod
+    def _points_to_str(points):
+        return '; '.join('%d,%d' % (int(x), int(y)) for (x, y) in (points or []))
+
+    @staticmethod
+    def _parse_points(text):
+        points = []
+        for chunk in text.replace('\n', ';').split(';'):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            x, y = chunk.split(',')
+            points.append([int(x), int(y)])
+        return points
+
+    def _browse(self, var):
         path = filedialog.askopenfilename(
             title='Choose a template image',
             initialdir=os.path.abspath('templates'),
@@ -90,23 +124,31 @@ class ScenarioDialog(tk.Toplevel):
             # store relative if inside the project, else absolute
             try:
                 rel = os.path.relpath(path, os.getcwd())
-                self.v_template.set(rel if not rel.startswith('..') else path)
+                var.set(rel if not rel.startswith('..') else path)
             except ValueError:
-                self.v_template.set(path)
+                var.set(path)
 
     def _ok(self):
         name = self.v_name.get().strip()
         template = self.v_template.get().strip()
         if not name:
             messagebox.showerror('Invalid', 'Name is required.', parent=self); return
-        if not template:
-            messagebox.showerror('Invalid', 'Template path is required.', parent=self); return
+        try:
+            points = self._parse_points(self.v_points.get())
+        except ValueError:
+            messagebox.showerror('Invalid', 'Tap points must be "x,y; x,y".', parent=self); return
+        if not template and not points:
+            messagebox.showerror(
+                'Invalid', 'Give a Template to locate, or Tap points to tap.',
+                parent=self); return
         try:
             self.result = Scenario(
                 name=name, template=template, enabled=self.v_enabled.get(),
                 threshold=float(self.v_threshold.get()), interval=float(self.v_interval.get()),
                 cooldown=float(self.v_cooldown.get()), multi_scale=self.v_multiscale.get(),
-                action=self.v_action.get())
+                action=self.v_action.get(),
+                when=self.v_when.get().strip(), unless=self.v_unless.get().strip(),
+                points=points)
         except (tk.TclError, ValueError) as e:
             messagebox.showerror('Invalid', 'Numeric field error: %s' % e, parent=self); return
         self.destroy()
@@ -195,8 +237,16 @@ class App(tk.Tk):
     def _refresh_table(self):
         self.tree.delete(*self.tree.get_children())
         for i, s in enumerate(self.engine.scenarios):
+            if s.template:
+                what = os.path.basename(s.template)
+            else:
+                what = '%d pt%s' % (len(s.points), '' if len(s.points) == 1 else 's')
+                if s.when:
+                    what += ' · when ' + os.path.splitext(os.path.basename(s.when))[0]
+                elif s.unless:
+                    what += ' · unless ' + os.path.splitext(os.path.basename(s.unless))[0]
             self.tree.insert('', 'end', iid=str(i), values=(
-                '✓' if s.enabled else '·', s.name, s.template,
+                '✓' if s.enabled else '·', s.name, what,
                 '%g' % s.interval, '%.2f' % s.threshold, s.action))
 
     def _selected_index(self):

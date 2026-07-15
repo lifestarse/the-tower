@@ -20,7 +20,7 @@ import json
 import os
 import threading
 import time
-from dataclasses import dataclass, asdict, fields
+from dataclasses import dataclass, asdict, fields, field
 
 from image_recognition import find_template, multi_scale, to_gray
 
@@ -30,13 +30,18 @@ DEFAULT_CONFIG = 'scenarios.json'
 @dataclass
 class Scenario:
     name: str
-    template: str                  # path to a PNG crop, e.g. templates/claim.png
+    template: str = ''             # PNG crop to locate + tap, e.g. templates/claim.png
     enabled: bool = True
     threshold: float = 0.80        # min match confidence (0..1)
     interval: float = 1.0          # seconds between checks — per scenario
     cooldown: float = 0.5          # min seconds between taps after a hit
     multi_scale: bool = True       # search several template scales
     action: str = 'tap'            # 'tap' | 'none' (log only)
+    # --- optional: context gate + fixed-point tapping (for menu buttons) ---
+    when: str = ''                 # only act if THIS template IS on screen (gate)
+    unless: str = ''               # only act if THIS template is NOT on screen
+    points: list = field(default_factory=list)  # fixed [x,y] taps (device px);
+    #                                if set, tap these instead of a matched center
 
     def to_dict(self):
         return asdict(self)
@@ -122,22 +127,37 @@ class Engine:
                      'emulator (adb devices).')
             return
 
-        # Preload + cache each enabled template as grayscale once.
-        templates = {}
+        # Preload + cache every referenced template (main + gate) as grayscale once.
+        cache = {}
+
+        def get_tpl(path):
+            if path not in cache:
+                cache[path] = to_gray(path)
+            return cache[path]
+
+        enabled = []
         for s in self.scenarios:
             if not s.enabled:
                 continue
             try:
-                templates[s.name] = to_gray(s.template)
+                if s.template:
+                    get_tpl(s.template)
+                if s.when:
+                    get_tpl(s.when)
+                if s.unless:
+                    get_tpl(s.unless)
             except Exception as e:  # noqa: BLE001
-                self.log('WARN: scenario %r: cannot load template %r (%s)'
-                         % (s.name, s.template, e))
+                self.log('WARN: scenario %r: cannot load template (%s)' % (s.name, e))
+                continue
+            if s.template or s.points:
+                enabled.append(s)
+            else:
+                self.log('WARN: scenario %r has neither a template nor points' % s.name)
 
-        enabled = [s for s in self.scenarios if s.enabled and s.name in templates]
         self.log('engine started: %d active scenario(s): %s'
                  % (len(enabled), ', '.join(s.name for s in enabled) or '<none>'))
         if not enabled:
-            self.log('nothing to do — enable a scenario with a valid template.')
+            self.log('nothing to do — enable a scenario with a template or points.')
             return
 
         last_check = {s.name: 0.0 for s in enabled}
@@ -179,7 +199,32 @@ class Engine:
             for s in due:
                 last_check[s.name] = now
                 scales = multi_scale() if s.multi_scale else None
-                m = find_template(screen, templates[s.name],
+
+                # Context gate: skip unless the 'when' template is on screen.
+                if s.when:
+                    if find_template(screen, get_tpl(s.when),
+                                     threshold=s.threshold, scales=scales) is None:
+                        self.log('check  %-18s (gate off)' % s.name)
+                        continue
+                # Negative gate: skip if the 'unless' template IS on screen.
+                if s.unless:
+                    if find_template(screen, get_tpl(s.unless),
+                                     threshold=s.threshold, scales=scales) is not None:
+                        self.log('check  %-18s (already present)' % s.name)
+                        continue
+
+                if s.points:
+                    # Fixed-point tapping (menu buttons at known positions).
+                    if now - last_tap[s.name] < s.cooldown:
+                        continue
+                    if s.action == 'tap':
+                        for (x, y) in s.points:
+                            device.tap_xy(int(x), int(y))
+                        self.log('  TAP   %-16s %d point(s)' % (s.name, len(s.points)))
+                    last_tap[s.name] = now
+                    continue
+
+                m = find_template(screen, get_tpl(s.template),
                                   threshold=s.threshold, scales=scales)
                 if m is None:
                     self.log('check  %-18s no match' % s.name)

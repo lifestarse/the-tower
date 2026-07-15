@@ -130,6 +130,31 @@ python scenario_ui.py
 The engine (`automation_engine.py`) is shared by both and is device-agnostic, so
 it can be unit-tested with a fake device — no emulator required.
 
+### Advanced scenarios (menu buttons)
+
+Beyond "find a template and tap it", a scenario can drive fixed on-screen menu
+buttons, gated by what's visible:
+
+- `points`: a list of fixed `[x, y]` taps (device pixels) — for buttons at known
+  positions. If set, the scenario taps these instead of a matched center.
+- `when`: only act if this template **is** on screen (context gate).
+- `unless`: only act if this template is **not** on screen (negative gate).
+
+The shipped `scenarios.json` uses these to auto-play a run at 900x1600:
+
+| scenario          | what it does                                                        |
+|-------------------|---------------------------------------------------------------------|
+| `claim gems`      | taps the 💎 CLAIM button whenever it appears                        |
+| `reveal ui`       | taps an empty spot to bring the upgrade panel up (`unless` UI shown) |
+| `upgrade attack`  | `when` ATTACK panel is up, taps the 2×3 upgrade grid                 |
+| `upgrade defense` | `when` DEFENSE panel is up, taps the 2×3 upgrade grid                |
+| `switch to defense` / `switch to attack` | tap the tab to cycle Attack↔Defense so both get bought |
+
+Set the panel's buy amount to **Max** in-game so each tap buys everything
+affordable. The tap coordinates are tuned for a **900x1600** portrait screen; if
+your emulator differs, re-grab templates with the UI's **Screenshot** button and
+adjust the `points` (editable in the Add/Edit dialog).
+
 ## Demo Video
 To be updated
 
