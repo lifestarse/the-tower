@@ -22,7 +22,10 @@ import threading
 import time
 from dataclasses import dataclass, asdict, fields, field
 
-from image_recognition import find_template, find_rotated, multi_scale, to_gray
+import numpy as np
+
+from image_recognition import (find_template, find_all_templates, find_rotated,
+                               multi_scale, to_gray)
 
 DEFAULT_CONFIG = 'scenarios.json'
 
@@ -46,6 +49,8 @@ class Scenario:
     rotate: int = 0                # if >0, match template at every `rotate`° step
     downscale: float = 1.0         # shrink screen+template for speed (rotate only)
     roi: list = field(default_factory=list)  # [x0,y0,x1,y1] search box (rotate)
+    # --- optional: multi-step macro (open menu -> scroll -> claim -> back) ---
+    steps: list = field(default_factory=list)  # if set, run these in order once
 
     def to_dict(self):
         return asdict(self)
@@ -59,6 +64,117 @@ class Scenario:
 def _default_device_factory(device_id):
     from android_device import AndroidDevice
     return AndroidDevice(device_id)
+
+
+# --------------------------------------------------------------------------- #
+# Macro step interpreter — lets a scenario be a small multi-step routine
+# (open a menu, scroll, tap every match, go back ...) built from the UI.
+# --------------------------------------------------------------------------- #
+def _screens_similar(a, b, tol=3.0):
+    aa = np.asarray(a.convert('L'), dtype=np.int16)
+    bb = np.asarray(b.convert('L'), dtype=np.int16)
+    return float(np.abs(aa - bb).mean()) < tol
+
+
+def run_steps(device, steps, log, width, height, stop=None):
+    """Run a macro step list once. Returns the number of taps performed.
+
+    Step shapes (each a dict with a "do" key):
+      {"do":"tap","template":"path","threshold":0.8,"all":false,"rotate":0,
+       "downscale":1.0,"roi":[],"band":[y0f,y1f],"gap":0.35}
+      {"do":"tap_points","points":[[x,y], ...]}
+      {"do":"swipe","vector":[x0f,y0f,x1f,y1f],"dur":400}   # fractions of screen
+      {"do":"wait","seconds":0.5}
+      {"do":"back"}
+      {"do":"repeat","steps":[...],"max":25,"until":"stable"|"no_tap"}
+    """
+    taps = 0
+    for step in steps:
+        if stop is not None and stop.is_set():
+            break
+        taps += _run_step(device, step, log, width, height, stop)
+    return taps
+
+
+def _run_step(device, step, log, width, height, stop):
+    do = (step.get('do') or '').lower()
+
+    if do == 'wait':
+        time.sleep(float(step.get('seconds', 0.5)))
+        return 0
+
+    if do == 'back':
+        device.back()
+        return 0
+
+    if do == 'swipe':
+        v = step.get('vector', [0.5, 0.75, 0.5, 0.4])
+        dur = int(step.get('dur', 400))
+        device.swipe_xy(int(width * v[0]), int(height * v[1]),
+                        int(width * v[2]), int(height * v[3]), dur)
+        return 0
+
+    if do == 'tap_points':
+        pts = step.get('points', [])
+        for (x, y) in pts:
+            device.tap_xy(int(x), int(y))
+        return len(pts)
+
+    if do == 'tap':
+        tpl = step.get('template')
+        if not tpl:
+            return 0
+        th = float(step.get('threshold', 0.8))
+        screen = device.capture()
+        if step.get('all'):
+            hits = find_all_templates(screen, tpl, threshold=th)
+            band = step.get('band')
+            if band:
+                y0, y1 = int(height * band[0]), int(height * band[1])
+                hits = [h for h in hits if y0 <= h.center[1] <= y1]
+            for h in sorted(hits, key=lambda m: m.center[1]):
+                device.tap_xy(*h.center)
+                time.sleep(float(step.get('gap', 0.35)))
+            if hits:
+                log('  macro: tapped %dx %s' % (len(hits), os.path.basename(tpl)))
+            return len(hits)
+        if int(step.get('rotate', 0)):
+            m = find_rotated(screen, tpl, step=int(step['rotate']), threshold=th,
+                             downscale=float(step.get('downscale', 1.0)),
+                             roi=(tuple(step['roi']) if step.get('roi') else None))
+        else:
+            m = find_template(screen, tpl, threshold=th)
+        if m is not None:
+            device.tap_xy(*m.center)
+            log('  macro: tapped %s' % os.path.basename(tpl))
+            return 1
+        return 0
+
+    if do == 'repeat':
+        inner = step.get('steps', [])
+        max_iter = int(step.get('max', 20))
+        until = step.get('until') or 'stable'   # 'stable' | 'no_tap' | {'gone': tpl}
+        gone = until.get('gone') if isinstance(until, dict) else None
+        gone_th = float(until.get('threshold', 0.8)) if isinstance(until, dict) else 0.8
+        total = 0
+        for _ in range(max_iter):
+            if stop is not None and stop.is_set():
+                break
+            before = device.capture() if until == 'stable' else None
+            got = run_steps(device, inner, log, width, height, stop)
+            total += got
+            if gone is not None:
+                if find_template(device.capture(), gone, threshold=gone_th) is None:
+                    break
+            elif until == 'no_tap' and got == 0:
+                break
+            elif until == 'stable' and before is not None \
+                    and _screens_similar(before, device.capture()):
+                break
+        return total
+
+    log('  macro: unknown step %r' % do)
+    return 0
 
 
 class Engine:
@@ -162,7 +278,7 @@ class Engine:
                     self.log('WARN: scenario %r: cannot load template (%s)' % (s.name, e))
                     warned.add(s.name)
                 return False
-            return bool(s.template or s.points)
+            return bool(s.template or s.points or s.steps)
 
         last_check = {}
         last_tap = {}
@@ -226,6 +342,20 @@ class Engine:
                                      threshold=s.threshold, scales=scales) is not None:
                         self.log('check  %-18s (already present)' % s.name)
                         continue
+
+                if s.steps:
+                    # Multi-step macro: run the whole routine once.
+                    if now - last_tap.get(s.name, 0.0) < s.cooldown:
+                        continue
+                    w, h = screen.size
+                    self.log('macro  %-18s running %d step(s)' % (s.name, len(s.steps)))
+                    n = run_steps(device, s.steps, self.log, w, h, self._stop)
+                    self.log('macro  %-18s done (%d tap(s))' % (s.name, n))
+                    if n:
+                        tapped(s.name)
+                    else:
+                        last_tap[s.name] = now
+                    continue
 
                 if s.points:
                     # Fixed-point tapping (menu buttons at known positions).

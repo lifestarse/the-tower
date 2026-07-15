@@ -136,36 +136,31 @@ A themed control panel:
 - **Start / Stop** with a status light; a colour-coded live log (taps green,
   warnings/errors highlighted) with **Clear** and **Autoscroll**.
 - **Screenshot** grabs the device screen to `screen.png` for cropping templates.
-- **Claim all** runs the event Claim-all macro (below).
 
-### Claim-all (event missions)
+### Macro scenarios (multi-step routines)
 
-`claim_all.py` is a one-shot macro (not a reactive scenario). It is driven
-entirely by **image recognition** — the ★ menu button, the CLAIM buttons and the
-"Tap To Return To Game" footer are all located by template matching
-(`templates/menu_star.png`, `claim_list.png`, `return_game.png`); the reward
-badge is detected by colour in a box **anchored to the located star**; and swipes
-are derived from the live screen size. No hard-coded button coordinates.
+A scenario can be a small **multi-step macro** instead of a single reactive tap —
+open a menu, scroll, tap every match, go back — all built from the UI via the
+**Steps (JSON)** field in the edit dialog. Steps run in order once each time the
+scenario fires. Step vocabulary:
 
-1. locate the ★ menu button (reveal the UI first if it's hidden).
-2. check the star's **blue reward badge** — if it's absent there's nothing to
-   claim and it stops immediately.
-3. open **Event / Missions**.
-4. **scroll to the top first** (the tab caches its scroll position, so rewards
-   can sit above where it reopens), then sweep down tapping every **CLAIM**.
-   Claiming reveals the next tier, so it repeats whole sweeps until one claims
-   nothing.
-5. tap the located **"Tap To Return To Game"** footer.
+| step | what it does |
+|------|--------------|
+| `{"do":"tap","template":"…","threshold":0.8,"all":false,"band":[y0,y1],"rotate":0}` | locate a template and tap it (best match, or **every** match with `"all"`; `band` limits to a vertical fraction of the screen) |
+| `{"do":"tap_points","points":[[x,y]]}` | tap fixed device points |
+| `{"do":"swipe","vector":[x0,y0,x1,y1],"dur":400}` | swipe/scroll — coords are **fractions** of the screen (0–1) |
+| `{"do":"wait","seconds":0.5}` / `{"do":"back"}` | pause / press Back |
+| `{"do":"repeat","steps":[…],"max":25,"until":"stable"}` | repeat inner steps until the screen stops changing (`"stable"`), until a pass taps nothing (`"no_tap"`), or until a template is gone (`{"gone":"…","threshold":0.65}`) |
 
-```shell
-python claim_all.py
-```
+The shipped **`claim all (event)`** scenario (disabled by default) is exactly this:
+open the ★ menu, scroll to the top, sweep down tapping every **CLAIM**, repeat
+sweeps until nothing is left, then tap **"Tap To Return To Game"** — all by image
+recognition. Enable it (with `reveal ui` on, so the panel is up) and set an
+interval. `claim_all.py` remains as a standalone equivalent that also colour-gates
+on the star's reward badge.
 
-Or press **Claim all** in the UI. Run it with the engine stopped so they don't
-fight over taps.
-
-The engine (`automation_engine.py`) is shared by both and is device-agnostic, so
-it can be unit-tested with a fake device — no emulator required.
+The engine (`automation_engine.py`) is device-agnostic, so both reactive
+scenarios and macros can be unit-tested with a fake device — no emulator required.
 
 ### Advanced scenarios (menu buttons)
 

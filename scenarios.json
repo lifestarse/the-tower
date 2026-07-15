@@ -184,6 +184,41 @@
       "rotate": 0,
       "downscale": 1.0,
       "roi": []
+    },
+    {
+      "name": "claim all (event)",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.8,
+      "interval": 180.0,
+      "cooldown": 10.0,
+      "multi_scale": false,
+      "action": "tap",
+      "when": "templates/menu_star.png",
+      "unless": "",
+      "points": [],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": [
+        {"do": "tap", "template": "templates/menu_star.png", "threshold": 0.8},
+        {"do": "wait", "seconds": 1.2},
+        {"do": "repeat", "until": "no_tap", "max": 8, "steps": [
+          {"do": "repeat", "until": "stable", "max": 25, "steps": [
+            {"do": "swipe", "vector": [0.5, 0.39, 0.5, 0.78]},
+            {"do": "wait", "seconds": 0.5}
+          ]},
+          {"do": "repeat", "until": "stable", "max": 25, "steps": [
+            {"do": "tap", "template": "templates/claim_list.png", "all": true, "threshold": 0.85, "band": [0.2, 0.92]},
+            {"do": "swipe", "vector": [0.5, 0.78, 0.5, 0.39]},
+            {"do": "wait", "seconds": 0.7}
+          ]}
+        ]},
+        {"do": "repeat", "until": {"gone": "templates/return_game.png", "threshold": 0.65}, "max": 6, "steps": [
+          {"do": "wait", "seconds": 0.7},
+          {"do": "tap", "template": "templates/return_game.png", "threshold": 0.65}
+        ]}
+      ]
     }
   ]
 }

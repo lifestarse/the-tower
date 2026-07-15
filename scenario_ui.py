@@ -139,6 +139,15 @@ class ScenarioDialog(tk.Toplevel):
         ttk.Entry(self, textvariable=self.v_points, width=26)\
             .grid(row=row, column=1, columnspan=2, sticky='we', **pad); row += 1
 
+        label('Steps (JSON macro)')
+        self.txt_steps = tk.Text(self, width=30, height=6, bg=INPUT, fg=TEXT,
+                                 insertbackground=TEXT, relief='flat',
+                                 font=('Consolas', 9), padx=4, pady=3)
+        self.txt_steps.grid(row=row, column=1, columnspan=2, sticky='we', **pad)
+        if s.steps:
+            self.txt_steps.insert('1.0', json.dumps(s.steps, indent=1))
+        row += 1
+
         label('Check interval (s)')
         ttk.Spinbox(self, textvariable=self.v_interval, from_=0.1, to=3600, increment=0.5,
                     width=10).grid(row=row, column=1, sticky='w', **pad); row += 1
@@ -209,9 +218,16 @@ class ScenarioDialog(tk.Toplevel):
             points = self._parse_points(self.v_points.get())
         except ValueError:
             messagebox.showerror('Invalid', 'Tap points must be "x,y; x,y".', parent=self); return
-        if not template and not points:
+        raw_steps = self.txt_steps.get('1.0', 'end').strip()
+        try:
+            steps = json.loads(raw_steps) if raw_steps else []
+            if not isinstance(steps, list):
+                raise ValueError('must be a JSON list of step objects')
+        except ValueError as e:
+            messagebox.showerror('Invalid', 'Steps JSON: %s' % e, parent=self); return
+        if not template and not points and not steps:
             messagebox.showerror(
-                'Invalid', 'Give a Template to locate, or Tap points to tap.',
+                'Invalid', 'Give a Template, Tap points, or Steps.',
                 parent=self); return
         try:
             self.result = Scenario(
@@ -221,7 +237,7 @@ class ScenarioDialog(tk.Toplevel):
                 action=self.v_action.get(),
                 when=self.v_when.get().strip(), unless=self.v_unless.get().strip(),
                 points=points, rotate=int(self.v_rotate.get()),
-                downscale=self._downscale, roi=self._roi)
+                downscale=self._downscale, roi=self._roi, steps=steps)
         except (tk.TclError, ValueError) as e:
             messagebox.showerror('Invalid', 'Numeric field error: %s' % e, parent=self); return
         self.destroy()
@@ -319,7 +335,6 @@ class App(tk.Tk):
         ttk.Checkbutton(c, text='Only when app in foreground', variable=self.v_fg,
                         style='Card.TCheckbutton').pack(side='left')
         ttk.Button(c, text='📸  Screenshot', command=self._screenshot).pack(side='right', padx=(0, 12))
-        ttk.Button(c, text='🎁  Claim all', command=self._claim_all).pack(side='right', padx=(0, 6))
 
     def _build_table(self):
         tb = ttk.Frame(self); tb.pack(fill='x', padx=14, pady=(8, 0))
@@ -377,6 +392,8 @@ class App(tk.Tk):
     # ------------------------------------------------------------- table
     @staticmethod
     def _target_text(s):
+        if s.steps:
+            return 'macro · %d step%s' % (len(s.steps), '' if len(s.steps) == 1 else 's')
         if s.template:
             t = os.path.basename(s.template)
             return t + (' ↻%d°' % s.rotate if s.rotate else '')
@@ -611,22 +628,6 @@ class App(tk.Tk):
                          s.threshold, 'HIT' if hit else 'no match'))
         except Exception as e:  # noqa: BLE001
             self._log('test error: %s' % e)
-
-    def _claim_all(self):
-        """Run the event Claim-all macro (claim_all.py) in the background."""
-        if self.engine.is_running() and not messagebox.askyesno(
-                'Claim all', 'The engine is running and may fight for taps.\n'
-                             'Run Claim-all anyway?'):
-            return
-        threading.Thread(target=self._run_claim_all, daemon=True).start()
-
-    def _run_claim_all(self):
-        try:
-            import claim_all
-            claim_all.main(logger=self._enqueue_log,
-                           device_id=self.v_device.get().strip() or self.engine.device_id)
-        except Exception as e:  # noqa: BLE001
-            self._log('claim-all error: %s' % e)
 
     def _screenshot(self):
         threading.Thread(target=self._grab, daemon=True).start()
