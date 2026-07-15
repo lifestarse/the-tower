@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
+# Runtime screenshots produced by capture_screen.py / run_template_demo.py
+screen.png
+matches.png
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/

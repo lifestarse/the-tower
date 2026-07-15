@@ -7,7 +7,9 @@
 
 ## Python packages
 - pure-python-adb 0.3.0.dev0
-- Pillow 9.0.1
+- Pillow >= 9.0.1
+- opencv-python >= 4.5
+- numpy >= 1.21
 
 ## ADB ?
 - All python automation scripts in this project use Android Debug Bridge(ADB) which is officially provided by Google.
@@ -41,6 +43,42 @@ python run_state_check.py
 5. Run automation script and have fun.
 ```shell
 python run_automation.py
+```
+
+## Image recognition (template matching)
+
+The original automation classifies the whole screen into a *state* (`state.py`,
+colour histograms on fixed rectangles) and then taps hard-coded coordinates.
+That breaks as soon as a button moves or the resolution changes.
+
+`image_recognition.py` adds real template matching (OpenCV `TM_CCOEFF_NORMED`):
+give it a small PNG crop of a button and it **locates that button anywhere on
+the screenshot** and taps its actual center. It supports multi-scale search (so
+templates cropped at one resolution still match at another) and a confidence
+threshold.
+
+```python
+from android_device import AndroidDevice
+from image_recognition import TemplateLibrary, locate_and_tap, multi_scale
+
+device = AndroidDevice('emulator-5554')
+lib = TemplateLibrary('templates')            # loads templates/*.png once
+screen = device.capture()
+if locate_and_tap(device, screen, lib['retry'], scales=multi_scale()):
+    print('tapped retry')
+```
+
+### Workflow
+1. Grab a screenshot: `python capture_screen.py screen.png`
+2. Crop a button into `templates/`: `python crop_template.py screen.png retry 180 1000 100 30`
+3. See what the matcher finds (writes `matches.png`): `python run_template_demo.py`
+4. Run the template-driven loop: `python run_smart_automation.py`
+
+See `templates/README.md` for naming and cropping tips. The matching logic has a
+built-in self-test that needs no device or game:
+
+```shell
+python image_recognition.py      # -> "image_recognition self-test OK ..."
 ```
 
 ## Demo Video
