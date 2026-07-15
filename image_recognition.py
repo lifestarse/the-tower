@@ -159,6 +159,69 @@ def multi_scale(low: float = 0.8, high: float = 1.2, steps: int = 9):
     return [round(float(s), 4) for s in np.linspace(low, high, steps)]
 
 
+def _rotate_gray(gray: np.ndarray, angle: float) -> np.ndarray:
+    """Rotate a grayscale image by ``angle`` degrees, expanding the canvas so
+    no corner is clipped (empty area filled black)."""
+    h, w = gray.shape[:2]
+    cx, cy = w / 2.0, h / 2.0
+    m = cv2.getRotationMatrix2D((cx, cy), angle, 1.0)
+    cos, sin = abs(m[0, 0]), abs(m[0, 1])
+    nw, nh = int(h * sin + w * cos), int(h * cos + w * sin)
+    m[0, 2] += nw / 2.0 - cx
+    m[1, 2] += nh / 2.0 - cy
+    return cv2.warpAffine(gray, m, (nw, nh), flags=cv2.INTER_LINEAR, borderValue=0)
+
+
+def find_rotated(screen, template, step: int = 15, threshold: float = 0.7,
+                 scales=None, downscale: float = 1.0, roi=None):
+    """Like :func:`find_template`, but tries the template at every rotation
+    (0, step, 2*step, ... < 360). For items that spin, such as the orbiting
+    diamond pickup, whose orientation changes as they move.
+
+    ``downscale`` (<1) shrinks screen and template before matching for speed —
+    0.5 is ~4x faster and usually keeps enough detail. ``roi`` is an optional
+    ``(x0, y0, x1, y1)`` box to restrict (and speed up) the search.
+
+    Returns the best :class:`Match` (in full-resolution screen coordinates) at or
+    above ``threshold``, else None. Costlier than find_template (≈ 360/step
+    matches), so keep the template small and the interval modest.
+    """
+    screen_g = to_gray(screen)
+    ox, oy = 0, 0
+    if roi:
+        x0, y0, x1, y1 = roi
+        ox, oy = x0, y0
+        screen_g = screen_g[y0:y1, x0:x1]
+    base = to_gray(template)
+
+    ds = float(downscale)
+    if ds != 1.0:
+        screen_g = cv2.resize(screen_g, None, fx=ds, fy=ds, interpolation=cv2.INTER_AREA)
+        base = cv2.resize(base, None, fx=ds, fy=ds, interpolation=cv2.INTER_AREA)
+
+    sh, sw = screen_g.shape[:2]
+    best = None
+    for angle in range(0, 360, max(1, int(step))):
+        t0 = base if angle == 0 else _rotate_gray(base, angle)
+        for scale in (scales if scales is not None else (1.0,)):
+            t = t0 if scale == 1.0 else cv2.resize(
+                t0, None, fx=scale, fy=scale,
+                interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR)
+            th, tw = t.shape[:2]
+            if th > sh or tw > sw or th < 4 or tw < 4:
+                continue
+            res = cv2.matchTemplate(screen_g, t, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, max_loc = cv2.minMaxLoc(res)
+            if best is None or max_val > best[0]:
+                best = (max_val, max_loc, (tw, th))
+
+    if best is None or best[0] < threshold:
+        return None
+    inv = 1.0 / ds
+    (mv, (lx, ly), (tw, th)) = best
+    return Match(mv, (ox + lx * inv, oy + ly * inv), (tw * inv, th * inv))
+
+
 # --------------------------------------------------------------------------- #
 # Device integration
 # --------------------------------------------------------------------------- #

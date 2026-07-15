@@ -14,6 +14,19 @@
       "action": "tap"
     },
     {
+      "name": "collect diamond",
+      "template": "templates/diamond.png",
+      "rotate": 20,
+      "downscale": 0.5,
+      "roi": [110, 100, 900, 810],
+      "enabled": true,
+      "threshold": 0.68,
+      "interval": 0.4,
+      "cooldown": 0.3,
+      "multi_scale": false,
+      "action": "tap"
+    },
+    {
       "name": "reveal ui",
       "template": "",
       "unless": "templates/ui_shown.png",

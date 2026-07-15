@@ -22,7 +22,7 @@ import threading
 import time
 from dataclasses import dataclass, asdict, fields, field
 
-from image_recognition import find_template, multi_scale, to_gray
+from image_recognition import find_template, find_rotated, multi_scale, to_gray
 
 DEFAULT_CONFIG = 'scenarios.json'
 
@@ -42,6 +42,10 @@ class Scenario:
     unless: str = ''               # only act if THIS template is NOT on screen
     points: list = field(default_factory=list)  # fixed [x,y] taps (device px);
     #                                if set, tap these instead of a matched center
+    # --- optional: rotation-invariant matching (for spinning items) ---
+    rotate: int = 0                # if >0, match template at every `rotate`° step
+    downscale: float = 1.0         # shrink screen+template for speed (rotate only)
+    roi: list = field(default_factory=list)  # [x0,y0,x1,y1] search box (rotate)
 
     def to_dict(self):
         return asdict(self)
@@ -224,8 +228,14 @@ class Engine:
                     last_tap[s.name] = now
                     continue
 
-                m = find_template(screen, get_tpl(s.template),
-                                  threshold=s.threshold, scales=scales)
+                if s.rotate:
+                    m = find_rotated(screen, get_tpl(s.template),
+                                     step=s.rotate, threshold=s.threshold,
+                                     downscale=(s.downscale or 1.0),
+                                     roi=(tuple(s.roi) if s.roi else None))
+                else:
+                    m = find_template(screen, get_tpl(s.template),
+                                      threshold=s.threshold, scales=scales)
                 if m is None:
                     self.log('check  %-18s no match' % s.name)
                     continue

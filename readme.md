@@ -139,12 +139,16 @@ buttons, gated by what's visible:
   positions. If set, the scenario taps these instead of a matched center.
 - `when`: only act if this template **is** on screen (context gate).
 - `unless`: only act if this template is **not** on screen (negative gate).
+- `rotate`: if `> 0`, match the template at every `rotate`° step (0..360) so it
+  finds items that **spin** — e.g. the orbiting diamond pickup. `downscale`
+  (e.g. `0.5`) and `roi` `[x0,y0,x1,y1]` keep this fast.
 
 The shipped `scenarios.json` uses these to auto-play a run at 900x1600:
 
 | scenario          | what it does                                                        |
 |-------------------|---------------------------------------------------------------------|
 | `claim gems`      | taps the 💎 CLAIM button whenever it appears                        |
+| `collect diamond` | `rotate`s the diamond template to find the spinning orbit pickup and taps it |
 | `reveal ui`       | taps an empty spot to bring the upgrade panel up (`unless` UI shown) |
 | `upgrade attack`  | `when` ATTACK panel is up, taps the 2×3 upgrade grid                 |
 | `upgrade defense` | `when` DEFENSE panel is up, taps the 2×3 upgrade grid                |

@@ -37,6 +37,9 @@ class ScenarioDialog(tk.Toplevel):
         self.v_cooldown = tk.DoubleVar(value=s.cooldown)
         self.v_multiscale = tk.BooleanVar(value=s.multi_scale)
         self.v_action = tk.StringVar(value=s.action)
+        self.v_rotate = tk.IntVar(value=s.rotate)
+        self._roi = list(s.roi)          # preserved as-is (edit in scenarios.json)
+        self._downscale = s.downscale
 
         pad = {'padx': 8, 'pady': 4}
         row = 0
@@ -84,6 +87,10 @@ class ScenarioDialog(tk.Toplevel):
         label('Action')
         ttk.Combobox(self, textvariable=self.v_action, values=['tap', 'none'],
                      state='readonly', width=8).grid(row=row, column=1, sticky='w', **pad); row += 1
+
+        label('Rotate step° (0=off)')
+        ttk.Spinbox(self, textvariable=self.v_rotate, from_=0, to=180, increment=5,
+                    width=10).grid(row=row, column=1, sticky='w', **pad); row += 1
 
         ttk.Checkbutton(self, text='Enabled', variable=self.v_enabled)\
             .grid(row=row, column=1, sticky='w', **pad)
@@ -148,7 +155,8 @@ class ScenarioDialog(tk.Toplevel):
                 cooldown=float(self.v_cooldown.get()), multi_scale=self.v_multiscale.get(),
                 action=self.v_action.get(),
                 when=self.v_when.get().strip(), unless=self.v_unless.get().strip(),
-                points=points)
+                points=points, rotate=int(self.v_rotate.get()),
+                downscale=self._downscale, roi=self._roi)
         except (tk.TclError, ValueError) as e:
             messagebox.showerror('Invalid', 'Numeric field error: %s' % e, parent=self); return
         self.destroy()
