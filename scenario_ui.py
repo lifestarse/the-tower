@@ -318,7 +318,8 @@ class App(tk.Tk):
         ttk.Entry(c, textvariable=self.v_package, width=26).pack(side='left', padx=(0, 12))
         ttk.Checkbutton(c, text='Only when app in foreground', variable=self.v_fg,
                         style='Card.TCheckbutton').pack(side='left')
-        ttk.Button(c, text='📸  Screenshot', command=self._screenshot).pack(side='right', padx=12)
+        ttk.Button(c, text='📸  Screenshot', command=self._screenshot).pack(side='right', padx=(0, 12))
+        ttk.Button(c, text='🎁  Claim all', command=self._claim_all).pack(side='right', padx=(0, 6))
 
     def _build_table(self):
         tb = ttk.Frame(self); tb.pack(fill='x', padx=14, pady=(8, 0))
@@ -610,6 +611,22 @@ class App(tk.Tk):
                          s.threshold, 'HIT' if hit else 'no match'))
         except Exception as e:  # noqa: BLE001
             self._log('test error: %s' % e)
+
+    def _claim_all(self):
+        """Run the event Claim-all macro (claim_all.py) in the background."""
+        if self.engine.is_running() and not messagebox.askyesno(
+                'Claim all', 'The engine is running and may fight for taps.\n'
+                             'Run Claim-all anyway?'):
+            return
+        threading.Thread(target=self._run_claim_all, daemon=True).start()
+
+    def _run_claim_all(self):
+        try:
+            import claim_all
+            claim_all.main(logger=self._enqueue_log,
+                           device_id=self.v_device.get().strip() or self.engine.device_id)
+        except Exception as e:  # noqa: BLE001
+            self._log('claim-all error: %s' % e)
 
     def _screenshot(self):
         threading.Thread(target=self._grab, daemon=True).start()

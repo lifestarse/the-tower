@@ -136,6 +136,22 @@ A themed control panel:
 - **Start / Stop** with a status light; a colour-coded live log (taps green,
   warnings/errors highlighted) with **Clear** and **Autoscroll**.
 - **Screenshot** grabs the device screen to `screen.png` for cropping templates.
+- **Claim all** runs the event Claim-all macro (below).
+
+### Claim-all (event missions)
+
+`claim_all.py` is a one-shot macro (not a reactive scenario) that recreates the
+manual flow: reveal the UI → tap the ★ menu → **Event / Missions** → tap every
+**CLAIM** button, **scrolling down** until the bottom, then return to the game.
+It matches the CLAIM buttons by image (so it claims whatever is completable) and
+stops when the list no longer scrolls.
+
+```shell
+python claim_all.py
+```
+
+Or press **Claim all** in the UI. Run it with the engine stopped so they don't
+fight over taps.
 
 The engine (`automation_engine.py`) is shared by both and is device-agnostic, so
 it can be unit-tested with a fake device — no emulator required.

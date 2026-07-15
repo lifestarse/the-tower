@@ -4,87 +4,186 @@
   "require_foreground": true,
   "scenarios": [
     {
+      "name": "collect diamond",
+      "template": "templates/diamond.png",
+      "enabled": true,
+      "threshold": 0.68,
+      "interval": 30.0,
+      "cooldown": 0.3,
+      "multi_scale": false,
+      "action": "tap",
+      "when": "",
+      "unless": "",
+      "points": [],
+      "rotate": 20,
+      "downscale": 0.5,
+      "roi": [
+        110,
+        100,
+        900,
+        810
+      ]
+    },
+    {
       "name": "claim gems",
       "template": "templates/claim.png",
       "enabled": true,
       "threshold": 0.8,
-      "interval": 1.0,
+      "interval": 30.0,
       "cooldown": 0.5,
       "multi_scale": true,
-      "action": "tap"
-    },
-    {
-      "name": "collect diamond",
-      "template": "templates/diamond.png",
-      "rotate": 20,
-      "downscale": 0.5,
-      "roi": [110, 100, 900, 810],
-      "enabled": true,
-      "threshold": 0.68,
-      "interval": 0.4,
-      "cooldown": 0.3,
-      "multi_scale": false,
-      "action": "tap"
+      "action": "tap",
+      "when": "",
+      "unless": "",
+      "points": [],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": []
     },
     {
       "name": "reveal ui",
       "template": "",
-      "unless": "templates/ui_shown.png",
-      "points": [[450, 400]],
-      "enabled": true,
+      "enabled": false,
       "threshold": 0.85,
       "interval": 1.0,
       "cooldown": 2.0,
       "multi_scale": false,
-      "action": "tap"
+      "action": "tap",
+      "when": "",
+      "unless": "templates/ui_shown.png",
+      "points": [
+        [
+          450,
+          400
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": []
     },
     {
       "name": "upgrade attack",
       "template": "",
-      "when": "templates/hdr_attack.png",
-      "points": [[230, 1130], [665, 1130], [230, 1300], [665, 1300], [230, 1465], [665, 1465]],
-      "enabled": true,
+      "enabled": false,
       "threshold": 0.85,
       "interval": 0.5,
       "cooldown": 0.4,
       "multi_scale": false,
-      "action": "tap"
+      "action": "tap",
+      "when": "templates/hdr_attack.png",
+      "unless": "",
+      "points": [
+        [
+          230,
+          1130
+        ],
+        [
+          665,
+          1130
+        ],
+        [
+          230,
+          1300
+        ],
+        [
+          665,
+          1300
+        ],
+        [
+          230,
+          1465
+        ],
+        [
+          665,
+          1465
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": []
     },
     {
       "name": "upgrade defense",
       "template": "",
-      "when": "templates/hdr_defense.png",
-      "points": [[230, 1130], [665, 1130], [230, 1300], [665, 1300], [230, 1465], [665, 1465]],
-      "enabled": true,
+      "enabled": false,
       "threshold": 0.85,
       "interval": 0.5,
       "cooldown": 0.4,
       "multi_scale": false,
-      "action": "tap"
+      "action": "tap",
+      "when": "templates/hdr_defense.png",
+      "unless": "",
+      "points": [
+        [
+          230,
+          1130
+        ],
+        [
+          665,
+          1130
+        ],
+        [
+          230,
+          1300
+        ],
+        [
+          665,
+          1300
+        ],
+        [
+          230,
+          1465
+        ],
+        [
+          665,
+          1465
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": []
     },
     {
       "name": "switch to defense",
       "template": "",
-      "when": "templates/hdr_attack.png",
-      "points": [[335, 1550]],
-      "enabled": true,
+      "enabled": false,
       "threshold": 0.85,
       "interval": 0.5,
       "cooldown": 6.0,
       "multi_scale": false,
-      "action": "tap"
+      "action": "tap",
+      "when": "templates/hdr_attack.png",
+      "unless": "",
+      "points": [
+        [
+          335,
+          1550
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": []
     },
     {
       "name": "switch to attack",
       "template": "",
-      "when": "templates/hdr_defense.png",
-      "points": [[112, 1550]],
-      "enabled": true,
+      "enabled": false,
       "threshold": 0.85,
       "interval": 0.5,
       "cooldown": 6.0,
       "multi_scale": false,
-      "action": "tap"
+      "action": "tap",
+      "when": "templates/hdr_defense.png",
+      "unless": "",
+      "points": [
+        [
+          112,
+          1550
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": []
     }
   ]
 }
