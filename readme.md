@@ -120,12 +120,22 @@ Example log:
 python scenario_ui.py
 ```
 
-- Table of scenarios — Add / Edit / Duplicate / Remove, reorder with ↑ / ↓.
-- Edit dialog: name, template (Browse), check interval, threshold, tap cooldown,
-  action (tap / log-only), enabled, multi-scale.
-- **Start / Stop** the engine; a live log shows every check and tap.
-- **Screenshot** button grabs the device screen to `screen.png` for cropping new
-  templates. **Save** writes back to `scenarios.json`.
+A themed control panel:
+
+- **Scenario table** with a live **On** column — click it (or press Space) to
+  enable/disable a scenario, even while the engine is running. Columns show the
+  target, interval, threshold, action, and a live **Fires** counter.
+- Add / Edit / Duplicate / Remove, reorder with ▲ / ▼, **Enable all / Disable all**.
+- **Edit dialog** covers every field: template (Browse), `when`/`unless` gates,
+  tap points, interval, threshold, cooldown, action, rotate step, enabled,
+  multi-scale.
+- **Test** the selected scenario — captures one frame and reports the match
+  confidence / gate state without tapping.
+- **Import / Export** from the menus: the whole config, or a single selected
+  scenario (`File` and `Scenario` menus). Plus Save (Ctrl+S) and Reload.
+- **Start / Stop** with a status light; a colour-coded live log (taps green,
+  warnings/errors highlighted) with **Clear** and **Autoscroll**.
+- **Screenshot** grabs the device screen to `screen.png` for cropping templates.
 
 The engine (`automation_engine.py`) is shared by both and is device-agnostic, so
 it can be unit-tested with a fake device — no emulator required.

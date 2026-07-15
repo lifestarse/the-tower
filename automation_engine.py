@@ -71,6 +71,7 @@ class Engine:
         self.app_package = 'com.TechTreeGames.TheTower'
         self.require_foreground = True
         self.scenarios = []
+        self.stats = {}                # scenario name -> times it acted this run
 
         self._thread = None
         self._stop = threading.Event()
@@ -82,26 +83,32 @@ class Engine:
         self.logger('[%s] %s' % (time.strftime('%H:%M:%S'), msg))
 
     # --------------------------------------------------------------- config
-    def load(self):
-        if not os.path.exists(self.config_path):
-            self.scenarios = []
-            return
-        with open(self.config_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        self.device_id = data.get('device_id', self.device_id)
-        self.app_package = data.get('app_package', self.app_package)
-        self.require_foreground = data.get('require_foreground', True)
-        self.scenarios = [Scenario.from_dict(s) for s in data.get('scenarios', [])]
-
-    def save(self):
-        data = {
+    def to_dict(self):
+        return {
             'device_id': self.device_id,
             'app_package': self.app_package,
             'require_foreground': self.require_foreground,
             'scenarios': [s.to_dict() for s in self.scenarios],
         }
-        with open(self.config_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    def apply_dict(self, data):
+        self.device_id = data.get('device_id', self.device_id)
+        self.app_package = data.get('app_package', self.app_package)
+        self.require_foreground = data.get('require_foreground', self.require_foreground)
+        self.scenarios = [Scenario.from_dict(s) for s in data.get('scenarios', [])]
+
+    def load(self, path=None):
+        path = path or self.config_path
+        if not os.path.exists(path):
+            self.scenarios = []
+            return
+        with open(path, 'r', encoding='utf-8') as f:
+            self.apply_dict(json.load(f))
+
+    def save(self, path=None):
+        path = path or self.config_path
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
 
     # --------------------------------------------------------------- control
     def is_running(self):
@@ -110,6 +117,7 @@ class Engine:
     def start(self):
         if self.is_running():
             return
+        self.stats = {}
         self._stop.clear()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
@@ -131,18 +139,17 @@ class Engine:
                      'emulator (adb devices).')
             return
 
-        # Preload + cache every referenced template (main + gate) as grayscale once.
+        # Grayscale template cache — lazy, so scenarios can be enabled mid-run.
         cache = {}
+        warned = set()
 
         def get_tpl(path):
             if path not in cache:
                 cache[path] = to_gray(path)
             return cache[path]
 
-        enabled = []
-        for s in self.scenarios:
-            if not s.enabled:
-                continue
+        def prepare(s):
+            """Load a scenario's templates on demand; False if it can't act."""
             try:
                 if s.template:
                     get_tpl(s.template)
@@ -151,26 +158,27 @@ class Engine:
                 if s.unless:
                     get_tpl(s.unless)
             except Exception as e:  # noqa: BLE001
-                self.log('WARN: scenario %r: cannot load template (%s)' % (s.name, e))
-                continue
-            if s.template or s.points:
-                enabled.append(s)
-            else:
-                self.log('WARN: scenario %r has neither a template nor points' % s.name)
+                if s.name not in warned:
+                    self.log('WARN: scenario %r: cannot load template (%s)' % (s.name, e))
+                    warned.add(s.name)
+                return False
+            return bool(s.template or s.points)
 
-        self.log('engine started: %d active scenario(s): %s'
-                 % (len(enabled), ', '.join(s.name for s in enabled) or '<none>'))
-        if not enabled:
-            self.log('nothing to do — enable a scenario with a template or points.')
-            return
-
-        last_check = {s.name: 0.0 for s in enabled}
-        last_tap = {s.name: 0.0 for s in enabled}
+        last_check = {}
+        last_tap = {}
         tick = 0.1
+
+        def tapped(name):
+            last_tap[name] = time.monotonic()
+            self.stats[name] = self.stats.get(name, 0) + 1
+
+        self.log('engine started (%d scenario(s) configured)' % len(self.scenarios))
 
         while not self._stop.is_set():
             now = time.monotonic()
-            due = [s for s in enabled if now - last_check[s.name] >= s.interval]
+            # Re-read `enabled` every tick so the UI can toggle scenarios live.
+            due = [s for s in self.scenarios
+                   if s.enabled and now - last_check.get(s.name, 0.0) >= s.interval]
             if not due:
                 time.sleep(tick)
                 continue
@@ -202,6 +210,8 @@ class Engine:
 
             for s in due:
                 last_check[s.name] = now
+                if not prepare(s):
+                    continue
                 scales = multi_scale() if s.multi_scale else None
 
                 # Context gate: skip unless the 'when' template is on screen.
@@ -219,13 +229,15 @@ class Engine:
 
                 if s.points:
                     # Fixed-point tapping (menu buttons at known positions).
-                    if now - last_tap[s.name] < s.cooldown:
+                    if now - last_tap.get(s.name, 0.0) < s.cooldown:
                         continue
                     if s.action == 'tap':
                         for (x, y) in s.points:
                             device.tap_xy(int(x), int(y))
                         self.log('  TAP   %-16s %d point(s)' % (s.name, len(s.points)))
-                    last_tap[s.name] = now
+                        tapped(s.name)
+                    else:
+                        last_tap[s.name] = now
                     continue
 
                 if s.rotate:
@@ -242,12 +254,12 @@ class Engine:
                 self.log('check  %-18s FOUND conf=%.3f at %s'
                          % (s.name, m.confidence, m.center))
                 if s.action == 'tap':
-                    if now - last_tap[s.name] < s.cooldown:
+                    if now - last_tap.get(s.name, 0.0) < s.cooldown:
                         self.log('  skip tap (%s on cooldown)' % s.name)
                         continue
                     device.tap_point(m.center)
-                    last_tap[s.name] = time.monotonic()
                     self.log('  TAP   %s at %s' % (s.name, m.center))
+                    tapped(s.name)
 
             time.sleep(tick)
 
