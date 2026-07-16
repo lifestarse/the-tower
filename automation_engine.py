@@ -39,6 +39,9 @@ class Scenario:
     interval: float = 1.0          # seconds between checks — per scenario
     cooldown: float = 0.5          # min seconds between taps after a hit
     multi_scale: bool = True       # search several template scales
+    scale_min: float = 0.8         # multi-scale: smallest template scale to try
+    scale_max: float = 1.2         # multi-scale: largest scale to try (up to ~10x)
+    scale_steps: int = 9           # multi-scale: number of scales between min & max
     action: str = 'tap'            # 'tap' | 'none' (log only)
     # --- optional: context gate + fixed-point tapping (for menu buttons) ---
     when: str = ''                 # only act if THIS template IS on screen (gate)
@@ -328,7 +331,8 @@ class Engine:
                 last_check[s.name] = now
                 if not prepare(s):
                     continue
-                scales = multi_scale() if s.multi_scale else None
+                scales = (multi_scale(s.scale_min, s.scale_max, s.scale_steps)
+                          if s.multi_scale else None)
 
                 # Context gate: skip unless the 'when' template is on screen.
                 if s.when:
@@ -373,7 +377,7 @@ class Engine:
                 if s.rotate:
                     m = find_rotated(screen, get_tpl(s.template),
                                      step=s.rotate, threshold=s.threshold,
-                                     downscale=(s.downscale or 1.0),
+                                     scales=scales, downscale=(s.downscale or 1.0),
                                      roi=(tuple(s.roi) if s.roi else None))
                 else:
                     m = find_template(screen, get_tpl(s.template),

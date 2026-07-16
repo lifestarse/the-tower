@@ -105,6 +105,9 @@ class ScenarioDialog(tk.Toplevel):
         self.v_multiscale = tk.BooleanVar(value=s.multi_scale)
         self.v_action = tk.StringVar(value=s.action)
         self.v_rotate = tk.IntVar(value=s.rotate)
+        self.v_scalemin = tk.DoubleVar(value=s.scale_min)
+        self.v_scalemax = tk.DoubleVar(value=s.scale_max)
+        self.v_scalesteps = tk.IntVar(value=s.scale_steps)
         self._roi = list(s.roi)          # preserved as-is (edit in scenarios.json)
         self._downscale = s.downscale
 
@@ -167,6 +170,18 @@ class ScenarioDialog(tk.Toplevel):
         label('Rotate step° (0=off)')
         ttk.Spinbox(self, textvariable=self.v_rotate, from_=0, to=180, increment=5,
                     width=10).grid(row=row, column=1, sticky='w', **pad); row += 1
+
+        label('Scale  min · max · steps')
+        sf = ttk.Frame(self); sf.grid(row=row, column=1, columnspan=2, sticky='w', **pad)
+        ttk.Spinbox(sf, textvariable=self.v_scalemin, from_=0.1, to=10.0, increment=0.1,
+                    width=6).pack(side='left')
+        ttk.Spinbox(sf, textvariable=self.v_scalemax, from_=0.1, to=10.0, increment=0.1,
+                    width=6).pack(side='left', padx=(5, 0))
+        ttk.Spinbox(sf, textvariable=self.v_scalesteps, from_=1, to=80, increment=1,
+                    width=5).pack(side='left', padx=(5, 0))
+        ttk.Label(sf, text='(needs Multi-scale on)', style='Muted.TLabel')\
+            .pack(side='left', padx=(8, 0))
+        row += 1
 
         ttk.Checkbutton(self, text='Enabled', variable=self.v_enabled)\
             .grid(row=row, column=1, sticky='w', **pad)
@@ -237,7 +252,10 @@ class ScenarioDialog(tk.Toplevel):
                 action=self.v_action.get(),
                 when=self.v_when.get().strip(), unless=self.v_unless.get().strip(),
                 points=points, rotate=int(self.v_rotate.get()),
-                downscale=self._downscale, roi=self._roi, steps=steps)
+                downscale=self._downscale, roi=self._roi, steps=steps,
+                scale_min=float(self.v_scalemin.get()),
+                scale_max=float(self.v_scalemax.get()),
+                scale_steps=int(self.v_scalesteps.get()))
         except (tk.TclError, ValueError) as e:
             messagebox.showerror('Invalid', 'Numeric field error: %s' % e, parent=self); return
         self.destroy()
@@ -615,13 +633,14 @@ class App(tk.Tk):
                     gate = 'unless-gate %s' % ('BLOCKS' if g else 'clear')
                 self._log('test %r: %s → would tap %d point(s)' % (s.name, gate, len(s.points)))
                 return
+            scales = (multi_scale(s.scale_min, s.scale_max, s.scale_steps)
+                      if s.multi_scale else None)
             if s.rotate:
                 m = find_rotated(screen, s.template, step=s.rotate, threshold=0.0,
-                                 downscale=(s.downscale or 1.0),
+                                 scales=scales, downscale=(s.downscale or 1.0),
                                  roi=(tuple(s.roi) if s.roi else None))
             else:
-                m = find_template(screen, s.template, threshold=0.0,
-                                  scales=(multi_scale() if s.multi_scale else None))
+                m = find_template(screen, s.template, threshold=0.0, scales=scales)
             hit = bool(m and m.confidence >= s.threshold)
             self._log('test %r: best=%.3f at %s (need %.2f) → %s'
                       % (s.name, m.confidence if m else -1, m.center if m else None,

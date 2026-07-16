@@ -22,14 +22,15 @@
         100,
         900,
         810
-      ]
+      ],
+      "steps": []
     },
     {
       "name": "claim gems",
       "template": "templates/claim.png",
       "enabled": true,
       "threshold": 0.8,
-      "interval": 30.0,
+      "interval": 1.0,
       "cooldown": 0.5,
       "multi_scale": true,
       "action": "tap",
@@ -38,7 +39,25 @@
       "points": [],
       "rotate": 0,
       "downscale": 1.0,
-      "roi": []
+      "roi": [],
+      "steps": []
+    },
+    {
+      "name": "retry",
+      "template": "templates/retry.png",
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 1.0,
+      "cooldown": 0.5,
+      "multi_scale": false,
+      "action": "tap",
+      "when": "",
+      "unless": "",
+      "points": [],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": []
     },
     {
       "name": "reveal ui",
@@ -59,7 +78,8 @@
       ],
       "rotate": 0,
       "downscale": 1.0,
-      "roi": []
+      "roi": [],
+      "steps": []
     },
     {
       "name": "upgrade attack",
@@ -100,7 +120,8 @@
       ],
       "rotate": 0,
       "downscale": 1.0,
-      "roi": []
+      "roi": [],
+      "steps": []
     },
     {
       "name": "upgrade defense",
@@ -141,7 +162,8 @@
       ],
       "rotate": 0,
       "downscale": 1.0,
-      "roi": []
+      "roi": [],
+      "steps": []
     },
     {
       "name": "switch to defense",
@@ -162,7 +184,8 @@
       ],
       "rotate": 0,
       "downscale": 1.0,
-      "roi": []
+      "roi": [],
+      "steps": []
     },
     {
       "name": "switch to attack",
@@ -183,7 +206,8 @@
       ],
       "rotate": 0,
       "downscale": 1.0,
-      "roi": []
+      "roi": [],
+      "steps": []
     },
     {
       "name": "claim all (event)",
@@ -201,23 +225,91 @@
       "downscale": 1.0,
       "roi": [],
       "steps": [
-        {"do": "tap", "template": "templates/menu_star.png", "threshold": 0.8},
-        {"do": "wait", "seconds": 1.2},
-        {"do": "repeat", "until": "no_tap", "max": 8, "steps": [
-          {"do": "repeat", "until": "stable", "max": 25, "steps": [
-            {"do": "swipe", "vector": [0.5, 0.39, 0.5, 0.78]},
-            {"do": "wait", "seconds": 0.5}
-          ]},
-          {"do": "repeat", "until": "stable", "max": 25, "steps": [
-            {"do": "tap", "template": "templates/claim_list.png", "all": true, "threshold": 0.85, "band": [0.2, 0.92]},
-            {"do": "swipe", "vector": [0.5, 0.78, 0.5, 0.39]},
-            {"do": "wait", "seconds": 0.7}
-          ]}
-        ]},
-        {"do": "repeat", "until": {"gone": "templates/return_game.png", "threshold": 0.65}, "max": 6, "steps": [
-          {"do": "wait", "seconds": 0.7},
-          {"do": "tap", "template": "templates/return_game.png", "threshold": 0.65}
-        ]}
+        {
+          "do": "tap",
+          "template": "templates/menu_star.png",
+          "threshold": 0.8
+        },
+        {
+          "do": "wait",
+          "seconds": 1.2
+        },
+        {
+          "do": "repeat",
+          "until": "no_tap",
+          "max": 8,
+          "steps": [
+            {
+              "do": "repeat",
+              "until": "stable",
+              "max": 25,
+              "steps": [
+                {
+                  "do": "swipe",
+                  "vector": [
+                    0.5,
+                    0.39,
+                    0.5,
+                    0.78
+                  ]
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.5
+                }
+              ]
+            },
+            {
+              "do": "repeat",
+              "until": "stable",
+              "max": 25,
+              "steps": [
+                {
+                  "do": "tap",
+                  "template": "templates/claim_list.png",
+                  "all": true,
+                  "threshold": 0.85,
+                  "band": [
+                    0.2,
+                    0.92
+                  ]
+                },
+                {
+                  "do": "swipe",
+                  "vector": [
+                    0.5,
+                    0.78,
+                    0.5,
+                    0.39
+                  ]
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.7
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "repeat",
+          "until": {
+            "gone": "templates/return_game.png",
+            "threshold": 0.65
+          },
+          "max": 6,
+          "steps": [
+            {
+              "do": "wait",
+              "seconds": 0.7
+            },
+            {
+              "do": "tap",
+              "template": "templates/return_game.png",
+              "threshold": 0.65
+            }
+          ]
+        }
       ]
     }
   ]
