@@ -69,242 +69,9 @@
       "steps": []
     },
     {
-      "name": "reveal ui",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 1.0,
-      "cooldown": 2.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "",
-      "unless": "templates/ui_shown.png",
-      "points": [
-        [
-          450,
-          400
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "upgrade attack",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 0.4,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_attack.png",
-      "unless": "",
-      "points": [
-        [
-          230,
-          1130
-        ],
-        [
-          665,
-          1130
-        ],
-        [
-          230,
-          1300
-        ],
-        [
-          665,
-          1300
-        ],
-        [
-          230,
-          1465
-        ],
-        [
-          665,
-          1465
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "upgrade defense",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 0.4,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_defense.png",
-      "unless": "",
-      "points": [
-        [
-          230,
-          1130
-        ],
-        [
-          665,
-          1130
-        ],
-        [
-          230,
-          1300
-        ],
-        [
-          665,
-          1300
-        ],
-        [
-          230,
-          1465
-        ],
-        [
-          665,
-          1465
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "switch to defense",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 6.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_attack.png",
-      "unless": "",
-      "points": [
-        [
-          335,
-          1550
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "switch to attack",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 6.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_defense.png",
-      "unless": "",
-      "points": [
-        [
-          112,
-          1550
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "pick perk",
-      "template": "",
-      "enabled": true,
-      "threshold": 0.85,
-      "interval": 180.0,
-      "cooldown": 3.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/new_perk_button.png",
-      "unless": "",
-      "points": [],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": [
-        {
-          "do": "tap",
-          "template": "templates/new_perk_button.png",
-          "threshold": 0.85
-        },
-        {
-          "do": "wait",
-          "seconds": 1.0
-        },
-        {
-          "do": "repeat",
-          "until": "no_tap",
-          "max": 6,
-          "steps": [
-            {
-              "do": "pick_perk",
-              "avoid": [
-                "enemy_damage",
-                "tower_hp",
-                "lifesteal"
-              ]
-            },
-            {
-              "do": "wait",
-              "seconds": 0.8
-            }
-          ]
-        },
-        {
-          "do": "repeat",
-          "until": {
-            "gone": "templates/perk_close.png",
-            "threshold": 0.7
-          },
-          "max": 5,
-          "steps": [
-            {
-              "do": "tap",
-              "template": "templates/perk_close.png",
-              "threshold": 0.8
-            },
-            {
-              "do": "wait",
-              "seconds": 0.6
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "claim all",
       "template": "",
-      "enabled": false,
+      "enabled": true,
       "threshold": 0.97,
       "interval": 120.0,
       "cooldown": 15.0,
@@ -519,6 +286,239 @@
           "threshold": 0.9
         }
       ]
+    },
+    {
+      "name": "pick perk",
+      "template": "",
+      "enabled": true,
+      "threshold": 0.85,
+      "interval": 180.0,
+      "cooldown": 3.0,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "templates/new_perk_button.png",
+      "unless": "",
+      "points": [],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": [
+        {
+          "do": "tap",
+          "template": "templates/new_perk_button.png",
+          "threshold": 0.85
+        },
+        {
+          "do": "wait",
+          "seconds": 1.0
+        },
+        {
+          "do": "repeat",
+          "until": "no_tap",
+          "max": 6,
+          "steps": [
+            {
+              "do": "pick_perk",
+              "avoid": [
+                "enemy_damage",
+                "tower_hp",
+                "lifesteal"
+              ]
+            },
+            {
+              "do": "wait",
+              "seconds": 0.8
+            }
+          ]
+        },
+        {
+          "do": "repeat",
+          "until": {
+            "gone": "templates/perk_close.png",
+            "threshold": 0.7
+          },
+          "max": 5,
+          "steps": [
+            {
+              "do": "tap",
+              "template": "templates/perk_close.png",
+              "threshold": 0.8
+            },
+            {
+              "do": "wait",
+              "seconds": 0.6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "reveal ui",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.85,
+      "interval": 1.0,
+      "cooldown": 2.0,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "",
+      "unless": "templates/ui_shown.png",
+      "points": [
+        [
+          450,
+          400
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": []
+    },
+    {
+      "name": "upgrade attack",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 0.4,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "templates/hdr_attack.png",
+      "unless": "",
+      "points": [
+        [
+          230,
+          1130
+        ],
+        [
+          665,
+          1130
+        ],
+        [
+          230,
+          1300
+        ],
+        [
+          665,
+          1300
+        ],
+        [
+          230,
+          1465
+        ],
+        [
+          665,
+          1465
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": []
+    },
+    {
+      "name": "upgrade defense",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 0.4,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "templates/hdr_defense.png",
+      "unless": "",
+      "points": [
+        [
+          230,
+          1130
+        ],
+        [
+          665,
+          1130
+        ],
+        [
+          230,
+          1300
+        ],
+        [
+          665,
+          1300
+        ],
+        [
+          230,
+          1465
+        ],
+        [
+          665,
+          1465
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": []
+    },
+    {
+      "name": "switch to defense",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 6.0,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "templates/hdr_attack.png",
+      "unless": "",
+      "points": [
+        [
+          335,
+          1550
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": []
+    },
+    {
+      "name": "switch to attack",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.85,
+      "interval": 0.5,
+      "cooldown": 6.0,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "templates/hdr_defense.png",
+      "unless": "",
+      "points": [
+        [
+          112,
+          1550
+        ]
+      ],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": []
     }
   ]
 }

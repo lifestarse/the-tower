@@ -83,6 +83,19 @@ def _screens_similar(a, b, tol=3.0):
 # --------------------------------------------------------------------------- #
 # Perk selection (OCR the "Choose a New Perk" screen and pick a good one)
 # --------------------------------------------------------------------------- #
+# Custom perk priority — higher = picked sooner. Keyed by a lowercase substring
+# of the perk text (as OCR reads it). Perks not listed use DEFAULT_PRIORITY.
+PERK_PRIORITY = {
+    'perk wave requirement': 5,
+    'defense percent': 4,
+    'max health': 4,
+    'free upgrade': 4,
+    'interest': 2,
+    'health regen': 2,
+}
+DEFAULT_PRIORITY = 3          # any good/UW perk not in PERK_PRIORITY
+
+
 def perk_badness(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
     """Which avoided categories a perk's text triggers (empty set = fine).
     All trade-off downsides read as "..., but ...". We only flag the ones the
@@ -100,13 +113,17 @@ def perk_badness(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
 
 
 def perk_score(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
-    """3 = standard/UW perk (no downside), 1 = harmless trade-off, 0 = a
-    trade-off that hits an avoided category."""
+    """Higher = better. 0 = a trade-off hitting an avoided category (never pick
+    unless forced); 1 = harmless trade-off; otherwise the perk's PERK_PRIORITY
+    (DEFAULT_PRIORITY if unlisted). The pick_perk step takes the highest score."""
+    if perk_badness(text, avoid):
+        return 0
     t = text.lower()
+    for key, pri in PERK_PRIORITY.items():
+        if key in t:
+            return pri
     is_tradeoff = ('but' in t.split() or ' but ' in t or ' но ' in t)
-    if not is_tradeoff:
-        return 3
-    return 0 if perk_badness(text, avoid) else 1
+    return 1 if is_tradeoff else DEFAULT_PRIORITY
 
 
 def run_steps(device, steps, log, width, height, stop=None):
