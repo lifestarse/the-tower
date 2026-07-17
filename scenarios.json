@@ -292,7 +292,7 @@
       "template": "",
       "enabled": true,
       "threshold": 0.85,
-      "interval": 180.0,
+      "interval": 30.0,
       "cooldown": 3.0,
       "multi_scale": false,
       "scale_min": 0.8,
