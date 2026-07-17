@@ -368,16 +368,42 @@
           "seconds": 1.0
         },
         {
-          "do": "pick_perk",
-          "avoid": [
-            "enemy_damage",
-            "tower_hp",
-            "lifesteal"
+          "do": "repeat",
+          "until": "no_tap",
+          "max": 6,
+          "steps": [
+            {
+              "do": "pick_perk",
+              "avoid": [
+                "enemy_damage",
+                "tower_hp",
+                "lifesteal"
+              ]
+            },
+            {
+              "do": "wait",
+              "seconds": 0.8
+            }
           ]
         },
         {
-          "do": "wait",
-          "seconds": 0.5
+          "do": "repeat",
+          "until": {
+            "gone": "templates/perk_close.png",
+            "threshold": 0.7
+          },
+          "max": 5,
+          "steps": [
+            {
+              "do": "tap",
+              "template": "templates/perk_close.png",
+              "threshold": 0.8
+            },
+            {
+              "do": "wait",
+              "seconds": 0.6
+            }
+          ]
         }
       ]
     }
