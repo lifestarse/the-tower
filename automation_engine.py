@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
 import time
 from dataclasses import dataclass, asdict, fields, field
@@ -77,6 +78,35 @@ def _screens_similar(a, b, tol=3.0):
     aa = np.asarray(a.convert('L'), dtype=np.int16)
     bb = np.asarray(b.convert('L'), dtype=np.int16)
     return float(np.abs(aa - bb).mean()) < tol
+
+
+# --------------------------------------------------------------------------- #
+# Perk selection (OCR the "Choose a New Perk" screen and pick a good one)
+# --------------------------------------------------------------------------- #
+def perk_badness(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
+    """Which avoided categories a perk's text triggers (empty set = fine).
+    All trade-off downsides read as "..., but ...". We only flag the ones the
+    user hates: enemy damage UP, tower max health DOWN, tower lifesteal DOWN."""
+    t = text.lower().replace('×', 'x')                  # normalise x
+    hits = set()
+    if 'enemy_damage' in avoid and re.search(r'enem\w*\s+damage\s*x', t):
+        hits.add('enemy_damage')                             # "Enemies Damage x2.5", "Ranged Enemies Damage x3"
+    if 'tower_hp' in avoid and 'max health -' in t:
+        hits.add('tower_hp')                                 # "Tower Max Health -70%" (not enemy/boss health)
+    if 'lifesteal' in avoid and (re.search(r'lifesteal\s*-', t)
+                                 or 'and lifesteal' in t or 'life absorption -' in t):
+        hits.add('lifesteal')                                # "... Lifesteal -90%"
+    return hits
+
+
+def perk_score(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
+    """3 = standard/UW perk (no downside), 1 = harmless trade-off, 0 = a
+    trade-off that hits an avoided category."""
+    t = text.lower()
+    is_tradeoff = ('but' in t.split() or ' but ' in t or ' но ' in t)
+    if not is_tradeoff:
+        return 3
+    return 0 if perk_badness(text, avoid) else 1
 
 
 def run_steps(device, steps, log, width, height, stop=None):
@@ -152,6 +182,56 @@ def _run_step(device, step, log, width, height, stop):
             log('  macro: tapped %s' % os.path.basename(tpl))
             return 1
         return 0
+
+    if do == 'pick_perk':
+        try:
+            import winocr
+        except ImportError:
+            log('  macro: pick_perk needs winocr (pip install winocr) — Windows only')
+            return 0
+        avoid = tuple(step.get('avoid', ['enemy_damage', 'tower_hp', 'lifesteal']))
+        screen = device.capture()
+        try:
+            res = winocr.recognize_pil_sync(screen.convert('RGB'), step.get('lang', 'en'))
+        except Exception as e:  # noqa: BLE001
+            log('  macro: pick_perk OCR failed: %s' % e)
+            return 0
+        lines = []
+        for ln in res.get('lines', []):
+            ws = ln.get('words') or []
+            if not ws:
+                continue
+            ys = [w['bounding_rect']['y'] for w in ws]
+            he = [w['bounding_rect']['y'] + w['bounding_rect']['height'] for w in ws]
+            lines.append(((min(ys) + max(he)) // 2, ln['text']))
+        header_y = None
+        footer_y = height
+        for yc, txt in lines:
+            tl = txt.lower()
+            if 'choose' in tl and 'perk' in tl:
+                header_y = yc
+            elif 'selected perk' in tl and yc > (header_y or 0):
+                footer_y = min(footer_y, yc)
+        if header_y is None:
+            log('  macro: pick_perk — perk screen not open (no "Choose a New Perk")')
+            return 0
+        choices = [(yc, txt) for (yc, txt) in lines
+                   if header_y < yc < footer_y and len(txt.strip()) >= 4]
+        if not choices:
+            log('  macro: pick_perk — screen open but no choices read')
+            return 0
+        scored = sorted(choices, key=lambda c: (perk_score(c[1], avoid), -c[0]), reverse=True)
+        best_yc, best_txt = scored[0]
+        best_score = perk_score(best_txt, avoid)
+        x = int(width * float(step.get('x_frac', 0.5)))
+        if best_score == 0:
+            log('  macro: pick_perk — ALL choices are bad, taking least-bad: %r' % best_txt)
+        else:
+            skipped = [t for (_, t) in choices if t != best_txt]
+            log('  macro: pick_perk -> %r%s'
+                % (best_txt, (' (skipped %s)' % ', '.join('%r' % s for s in skipped)) if skipped else ''))
+        device.tap_xy(x, int(best_yc))
+        return 1
 
     if do == 'repeat':
         inner = step.get('steps', [])
