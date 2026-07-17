@@ -524,7 +524,9 @@ class App(tk.Tk):
 
     def _save(self):
         self._pull_settings(); self.engine.save()
-        self._log('saved %s' % self.engine.config_path)
+        self._log('saved %s — device=%s, app=%s, %d scenario(s)'
+                  % (self.engine.config_path, self.engine.device_id,
+                     self.engine.app_package or '-', len(self.engine.scenarios)))
 
     def _reload(self):
         self.engine.load(); self._sync_settings_vars(); self._refresh_table()
