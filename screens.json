@@ -1,0 +1,13 @@
+{
+  "_comment": "Screen recognizer for The Tower. Checked top-to-bottom: the FIRST screen whose ANY template matches at/above its threshold wins. Keep overlays (skip, perk, game-over) above base screens (in_game) so an overlay on top of the battlefield is reported, not the battlefield.",
+  "screens": [
+    { "name": "reward_skip",  "threshold": 0.85, "templates": ["templates/skip.png"] },
+    { "name": "choose_perk",  "threshold": 0.9,  "templates": ["templates/new_perk_button.png", "templates/choose new perk.png"] },
+    { "name": "game_over",    "threshold": 0.85, "templates": ["templates/retry.png"] },
+    { "name": "task_reward",  "threshold": 0.9,  "templates": ["templates/box.png", "templates/task reward shown.png"] },
+    { "name": "star_reward",  "threshold": 0.9,  "templates": ["templates/star reward is ready.png"] },
+    { "name": "mission_list", "threshold": 0.8,  "templates": ["templates/claim_list.png", "templates/return_game.png"] },
+    { "name": "reward_ready", "threshold": 0.9,  "templates": ["templates/reward ready.png"] },
+    { "name": "in_game",      "threshold": 0.85, "templates": ["templates/hdr_attack.png", "templates/hdr_defense.png", "templates/menu_star.png"] }
+  ]
+}

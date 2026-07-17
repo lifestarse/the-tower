@@ -163,4 +163,5 @@ cython_debug/
 # private
 tools/
 
-# End of https://www.toptal.com/developers/gitignore/api/python
+# End of https://www.toptal.com/developers/gitignore/api/pythonstate/
+state/

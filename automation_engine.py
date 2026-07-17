@@ -45,8 +45,13 @@ class Scenario:
     scale_steps: int = 9           # multi-scale: number of scales between min & max
     action: str = 'tap'            # 'tap' | 'none' (log only)
     # --- optional: context gate + fixed-point tapping (for menu buttons) ---
-    when: str = ''                 # only act if THIS template IS on screen (gate)
-    unless: str = ''               # only act if THIS template is NOT on screen
+    when: str = ''                 # gate: act only if this template IS on screen.
+    #                                May also be a list (OR: any one on screen is
+    #                                enough) and each entry may be a
+    #                                {"template":.., "threshold":..} dict.
+    unless: str = ''               # negative gate: skip if this template IS on
+    #                                screen. Same list/dict forms as `when`
+    #                                (OR: skip if ANY listed template is present).
     points: list = field(default_factory=list)  # fixed [x,y] taps (device px);
     #                                if set, tap these instead of a matched center
     # --- optional: rotation-invariant matching (for spinning items) ---
@@ -68,6 +73,29 @@ class Scenario:
 def _default_device_factory(device_id):
     from android_device import AndroidDevice
     return AndroidDevice(device_id)
+
+
+def _gate_entries(value, default_threshold):
+    """Normalise a ``when`` / ``unless`` value into ``[(path, threshold), ...]``.
+
+    Accepts, for backward compatibility and OR-gates:
+      * ``''``               -> no gate (empty list)
+      * ``'templates/x.png'``-> single template at ``default_threshold``
+      * ``{'template': ..., 'threshold': ...}`` -> single, own threshold
+      * a list mixing the two forms -> OR gate (the caller treats a hit on ANY
+        entry as the gate being satisfied)
+    """
+    if not value:
+        return []
+    items = value if isinstance(value, list) else [value]
+    out = []
+    for it in items:
+        if isinstance(it, dict):
+            out.append((it['template'],
+                        float(it.get('threshold', default_threshold))))
+        else:
+            out.append((it, default_threshold))
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -259,6 +287,53 @@ def _run_step(device, step, log, width, height, stop):
             return run_steps(device, step.get('steps', []), log, width, height, stop)
         return 0
 
+    if do == 'whereami':
+        # Log which named screen (screens.json) is currently showing.
+        try:
+            from screen_state import identify_screen
+            info = identify_screen(device.capture())
+            if info['matched']:
+                log('  macro: screen = %s (%.3f)' % (info['name'], info['confidence']))
+            else:
+                log('  macro: screen = unknown (closest %s %.3f)'
+                    % (info.get('closest'), info['confidence']))
+        except Exception as e:  # noqa: BLE001
+            log('  macro: whereami failed: %s' % e)
+        return 0
+
+    if do == 'upgrade_all':
+        # Smart in-battle upgrade buyer (see upgrade_all.py): reads every cell
+        # across the Attack/Defense/Utility tabs, skips maxed ones (button
+        # colour), and buys buyable ones by cash-priority within budget.
+        try:
+            from upgrade_all import run_upgrade_all, CATEGORIES
+        except Exception as e:  # noqa: BLE001
+            log('  macro: upgrade_all unavailable (%s)' % e)
+            return 0
+        cats = tuple(step.get('cats') or CATEGORIES)
+        try:
+            return run_upgrade_all(device, log, cats=cats,
+                                   floor=int(step.get('floor', 1)),
+                                   verbose=bool(step.get('verbose', False)))
+        except Exception as e:  # noqa: BLE001
+            log('  macro: upgrade_all failed: %s' % e)
+            return 0
+
+    if do == 'if_screen':
+        # Run inner steps only when the current screen is (or, present:false,
+        # is NOT) the named screen from screens.json.
+        want = step.get('screen')
+        try:
+            from screen_state import identify_screen
+            info = identify_screen(device.capture())
+        except Exception as e:  # noqa: BLE001
+            log('  macro: if_screen failed: %s' % e)
+            return 0
+        on_it = (info['name'] == want)
+        if on_it == bool(step.get('present', True)):
+            return run_steps(device, step.get('steps', []), log, width, height, stop)
+        return 0
+
     if do == 'repeat':
         inner = step.get('steps', [])
         max_iter = int(step.get('max', 20))
@@ -378,10 +453,10 @@ class Engine:
             try:
                 if s.template:
                     get_tpl(s.template)
-                if s.when:
-                    get_tpl(s.when)
-                if s.unless:
-                    get_tpl(s.unless)
+                for _p, _th in _gate_entries(s.when, s.threshold):
+                    get_tpl(_p)
+                for _p, _th in _gate_entries(s.unless, s.threshold):
+                    get_tpl(_p)
             except Exception as e:  # noqa: BLE001
                 if s.name not in warned:
                     self.log('WARN: scenario %r: cannot load template (%s)' % (s.name, e))
@@ -440,16 +515,21 @@ class Engine:
                 scales = (multi_scale(s.scale_min, s.scale_max, s.scale_steps)
                           if s.multi_scale else None)
 
-                # Context gate: skip unless the 'when' template is on screen.
-                if s.when:
-                    if find_template(screen, get_tpl(s.when),
-                                     threshold=s.threshold, scales=scales) is None:
+                # Context gate: skip unless AT LEAST ONE 'when' template is on
+                # screen (OR over the list). Each entry may carry its own threshold.
+                when_entries = _gate_entries(s.when, s.threshold)
+                if when_entries:
+                    if not any(find_template(screen, get_tpl(p), threshold=th,
+                                             scales=scales) is not None
+                               for p, th in when_entries):
                         self.log('check  %-18s (gate off)' % s.name)
                         continue
-                # Negative gate: skip if the 'unless' template IS on screen.
-                if s.unless:
-                    if find_template(screen, get_tpl(s.unless),
-                                     threshold=s.threshold, scales=scales) is not None:
+                # Negative gate: skip if ANY 'unless' template IS on screen (OR).
+                unless_entries = _gate_entries(s.unless, s.threshold)
+                if unless_entries:
+                    if any(find_template(screen, get_tpl(p), threshold=th,
+                                         scales=scales) is not None
+                           for p, th in unless_entries):
                         self.log('check  %-18s (already present)' % s.name)
                         continue
 

@@ -80,7 +80,20 @@
       "scale_max": 1.2,
       "scale_steps": 9,
       "action": "tap",
-      "when": "templates/reward ready.png",
+      "when": [
+        {
+          "template": "templates/reward ready.png",
+          "threshold": 0.95
+        },
+        {
+          "template": "templates/star reward is ready.png",
+          "threshold": 0.96
+        },
+        {
+          "template": "templates/task reward shown.png",
+          "threshold": 0.965
+        }
+      ],
       "unless": "",
       "points": [],
       "rotate": 0,
@@ -104,6 +117,41 @@
         {
           "do": "wait",
           "seconds": 0.9
+        },
+        {
+          "do": "repeat",
+          "until": "no_tap",
+          "max": 20,
+          "steps": [
+            {
+              "do": "tap",
+              "template": "templates/box.png",
+              "threshold": 0.9
+            },
+            {
+              "do": "wait",
+              "seconds": 0.8
+            },
+            {
+              "do": "repeat",
+              "until": {
+                "gone": "templates/skip.png",
+                "threshold": 0.85
+              },
+              "max": 4,
+              "steps": [
+                {
+                  "do": "tap",
+                  "template": "templates/skip.png",
+                  "threshold": 0.85
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.5
+                }
+              ]
+            }
+          ]
         },
         {
           "do": "if",
@@ -381,144 +429,28 @@
       "steps": []
     },
     {
-      "name": "upgrade attack",
+      "name": "upgrade all",
       "template": "",
       "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 0.4,
+      "threshold": 0.9,
+      "interval": 60.0,
+      "cooldown": 30.0,
       "multi_scale": false,
       "scale_min": 0.8,
       "scale_max": 1.2,
       "scale_steps": 9,
       "action": "tap",
-      "when": "templates/hdr_attack.png",
+      "when": "",
       "unless": "",
-      "points": [
-        [
-          230,
-          1130
-        ],
-        [
-          665,
-          1130
-        ],
-        [
-          230,
-          1300
-        ],
-        [
-          665,
-          1300
-        ],
-        [
-          230,
-          1465
-        ],
-        [
-          665,
-          1465
-        ]
-      ],
+      "points": [],
       "rotate": 0,
       "downscale": 1.0,
       "roi": [],
-      "steps": []
-    },
-    {
-      "name": "upgrade defense",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 0.4,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_defense.png",
-      "unless": "",
-      "points": [
-        [
-          230,
-          1130
-        ],
-        [
-          665,
-          1130
-        ],
-        [
-          230,
-          1300
-        ],
-        [
-          665,
-          1300
-        ],
-        [
-          230,
-          1465
-        ],
-        [
-          665,
-          1465
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "switch to defense",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 6.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_attack.png",
-      "unless": "",
-      "points": [
-        [
-          335,
-          1550
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
-    },
-    {
-      "name": "switch to attack",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.85,
-      "interval": 0.5,
-      "cooldown": 6.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/hdr_defense.png",
-      "unless": "",
-      "points": [
-        [
-          112,
-          1550
-        ]
-      ],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": []
+      "steps": [
+        {
+          "do": "upgrade_all"
+        }
+      ]
     }
   ]
 }

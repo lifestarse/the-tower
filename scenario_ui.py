@@ -15,7 +15,29 @@ import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from automation_engine import Engine, Scenario
+from automation_engine import Engine, Scenario, _gate_entries
+
+
+def _gate_field_str(value):
+    """Human-readable one-line form of a when/unless value for the editor field.
+
+    A plain string round-trips unchanged; a list/dict OR-gate is shown as
+    ``a.png | b.png`` (display only — the original object is preserved on save
+    unless the field is actually edited)."""
+    if not value:
+        return ''
+    if isinstance(value, str):
+        return value
+    return ' | '.join(p for p, _th in _gate_entries(value, 0.0))
+
+
+def _resolve_gate_field(text, original):
+    """Turn the editor field back into a gate value, preserving a list/dict
+    OR-gate when the field was not edited away from its displayed form."""
+    text = text.strip()
+    if not isinstance(original, str) and text == _gate_field_str(original):
+        return original
+    return text
 
 # --------------------------------------------------------------------------- #
 # Palette + ttk styling
@@ -95,8 +117,10 @@ class ScenarioDialog(tk.Toplevel):
 
         self.v_name = tk.StringVar(value=s.name)
         self.v_template = tk.StringVar(value=s.template)
-        self.v_when = tk.StringVar(value=s.when)
-        self.v_unless = tk.StringVar(value=s.unless)
+        self._when_orig = s.when
+        self._unless_orig = s.unless
+        self.v_when = tk.StringVar(value=_gate_field_str(s.when))
+        self.v_unless = tk.StringVar(value=_gate_field_str(s.unless))
         self.v_points = tk.StringVar(value=self._points_to_str(s.points))
         self.v_enabled = tk.BooleanVar(value=s.enabled)
         self.v_threshold = tk.DoubleVar(value=s.threshold)
@@ -250,7 +274,8 @@ class ScenarioDialog(tk.Toplevel):
                 threshold=float(self.v_threshold.get()), interval=float(self.v_interval.get()),
                 cooldown=float(self.v_cooldown.get()), multi_scale=self.v_multiscale.get(),
                 action=self.v_action.get(),
-                when=self.v_when.get().strip(), unless=self.v_unless.get().strip(),
+                when=_resolve_gate_field(self.v_when.get(), self._when_orig),
+                unless=_resolve_gate_field(self.v_unless.get(), self._unless_orig),
                 points=points, rotate=int(self.v_rotate.get()),
                 downscale=self._downscale, roi=self._roi, steps=steps,
                 scale_min=float(self.v_scalemin.get()),
@@ -417,9 +442,13 @@ class App(tk.Tk):
             return t + (' ↻%d°' % s.rotate if s.rotate else '')
         parts = ['%d pt%s' % (len(s.points), '' if len(s.points) == 1 else 's')]
         if s.when:
-            parts.append('when ' + os.path.splitext(os.path.basename(s.when))[0])
+            names = [os.path.splitext(os.path.basename(p))[0]
+                     for p, _th in _gate_entries(s.when, 0.0)]
+            parts.append('when ' + ' | '.join(names))
         if s.unless:
-            parts.append('unless ' + os.path.splitext(os.path.basename(s.unless))[0])
+            names = [os.path.splitext(os.path.basename(p))[0]
+                     for p, _th in _gate_entries(s.unless, 0.0)]
+            parts.append('unless ' + ' | '.join(names))
         return ' · '.join(parts)
 
     def _refresh_table(self):
@@ -628,10 +657,12 @@ class App(tk.Tk):
             if not s.template and s.points:
                 gate = 'always'
                 if s.when:
-                    g = find_template(screen, s.when, threshold=s.threshold)
+                    g = any(find_template(screen, p, threshold=th)
+                            for p, th in _gate_entries(s.when, s.threshold))
                     gate = 'when-gate %s' % ('MET' if g else 'not met')
                 elif s.unless:
-                    g = find_template(screen, s.unless, threshold=s.threshold)
+                    g = any(find_template(screen, p, threshold=th)
+                            for p, th in _gate_entries(s.unless, s.threshold))
                     gate = 'unless-gate %s' % ('BLOCKS' if g else 'clear')
                 self._log('test %r: %s → would tap %d point(s)' % (s.name, gate, len(s.points)))
                 return
