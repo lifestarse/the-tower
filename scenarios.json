@@ -1,5 +1,5 @@
 {
-  "device_id": "127.0.0.1:5555",
+  "device_id": "127.0.0.1:5556",
   "app_package": "com.TechTreeGames.TheTower",
   "require_foreground": true,
   "scenarios": [
@@ -33,7 +33,7 @@
       "template": "templates/claim.png",
       "enabled": true,
       "threshold": 0.8,
-      "interval": 1.0,
+      "interval": 10.0,
       "cooldown": 0.5,
       "multi_scale": true,
       "scale_min": 0.8,
@@ -53,7 +53,7 @@
       "template": "templates/retry.png",
       "enabled": true,
       "threshold": 0.85,
-      "interval": 1.0,
+      "interval": 180.0,
       "cooldown": 0.5,
       "multi_scale": false,
       "scale_min": 0.8,
@@ -234,117 +234,11 @@
       "steps": []
     },
     {
-      "name": "claim all (event)",
-      "template": "",
-      "enabled": false,
-      "threshold": 0.8,
-      "interval": 180.0,
-      "cooldown": 10.0,
-      "multi_scale": false,
-      "scale_min": 0.8,
-      "scale_max": 1.2,
-      "scale_steps": 9,
-      "action": "tap",
-      "when": "templates/menu_star.png",
-      "unless": "",
-      "points": [],
-      "rotate": 0,
-      "downscale": 1.0,
-      "roi": [],
-      "steps": [
-        {
-          "do": "tap",
-          "template": "templates/menu_star.png",
-          "threshold": 0.8
-        },
-        {
-          "do": "wait",
-          "seconds": 1.2
-        },
-        {
-          "do": "repeat",
-          "until": "no_tap",
-          "max": 8,
-          "steps": [
-            {
-              "do": "repeat",
-              "until": "stable",
-              "max": 25,
-              "steps": [
-                {
-                  "do": "swipe",
-                  "vector": [
-                    0.5,
-                    0.39,
-                    0.5,
-                    0.78
-                  ]
-                },
-                {
-                  "do": "wait",
-                  "seconds": 0.5
-                }
-              ]
-            },
-            {
-              "do": "repeat",
-              "until": "stable",
-              "max": 25,
-              "steps": [
-                {
-                  "do": "tap",
-                  "template": "templates/claim_list.png",
-                  "all": true,
-                  "threshold": 0.85,
-                  "band": [
-                    0.2,
-                    0.92
-                  ]
-                },
-                {
-                  "do": "swipe",
-                  "vector": [
-                    0.5,
-                    0.78,
-                    0.5,
-                    0.39
-                  ]
-                },
-                {
-                  "do": "wait",
-                  "seconds": 0.7
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "do": "repeat",
-          "until": {
-            "gone": "templates/return_game.png",
-            "threshold": 0.65
-          },
-          "max": 6,
-          "steps": [
-            {
-              "do": "wait",
-              "seconds": 0.7
-            },
-            {
-              "do": "tap",
-              "template": "templates/return_game.png",
-              "threshold": 0.65
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "pick perk",
       "template": "",
-      "enabled": false,
+      "enabled": true,
       "threshold": 0.85,
-      "interval": 5.0,
+      "interval": 180.0,
       "cooldown": 3.0,
       "multi_scale": false,
       "scale_min": 0.8,
@@ -404,6 +298,211 @@
               "seconds": 0.6
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "claim all",
+      "template": "",
+      "enabled": false,
+      "threshold": 0.97,
+      "interval": 120.0,
+      "cooldown": 15.0,
+      "multi_scale": false,
+      "scale_min": 0.8,
+      "scale_max": 1.2,
+      "scale_steps": 9,
+      "action": "tap",
+      "when": "templates/reward ready.png",
+      "unless": "",
+      "points": [],
+      "rotate": 0,
+      "downscale": 1.0,
+      "roi": [],
+      "steps": [
+        {
+          "do": "tap",
+          "template": "templates/reward ready.png",
+          "threshold": 0.95
+        },
+        {
+          "do": "wait",
+          "seconds": 1.0
+        },
+        {
+          "do": "tap",
+          "template": "templates/task reward shown.png",
+          "threshold": 0.965
+        },
+        {
+          "do": "wait",
+          "seconds": 0.8
+        },
+        {
+          "do": "repeat",
+          "until": "no_tap",
+          "max": 8,
+          "steps": [
+            {
+              "do": "repeat",
+              "until": "stable",
+              "max": 20,
+              "steps": [
+                {
+                  "do": "swipe",
+                  "vector": [
+                    0.5,
+                    0.39,
+                    0.5,
+                    0.78
+                  ]
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.5
+                }
+              ]
+            },
+            {
+              "do": "repeat",
+              "until": "stable",
+              "max": 20,
+              "steps": [
+                {
+                  "do": "tap",
+                  "template": "templates/claim_list.png",
+                  "all": true,
+                  "threshold": 0.85,
+                  "band": [
+                    0.2,
+                    0.92
+                  ]
+                },
+                {
+                  "do": "swipe",
+                  "vector": [
+                    0.5,
+                    0.78,
+                    0.5,
+                    0.39
+                  ]
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.7
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "repeat",
+          "until": {
+            "gone": "templates/return_game.png",
+            "threshold": 0.65
+          },
+          "max": 5,
+          "steps": [
+            {
+              "do": "wait",
+              "seconds": 0.7
+            },
+            {
+              "do": "tap",
+              "template": "templates/return_game.png",
+              "threshold": 0.65
+            }
+          ]
+        },
+        {
+          "do": "tap",
+          "template": "templates/star reward is ready.png",
+          "threshold": 0.97
+        },
+        {
+          "do": "wait",
+          "seconds": 0.8
+        },
+        {
+          "do": "repeat",
+          "until": "no_tap",
+          "max": 8,
+          "steps": [
+            {
+              "do": "repeat",
+              "until": "stable",
+              "max": 20,
+              "steps": [
+                {
+                  "do": "swipe",
+                  "vector": [
+                    0.5,
+                    0.39,
+                    0.5,
+                    0.78
+                  ]
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.5
+                }
+              ]
+            },
+            {
+              "do": "repeat",
+              "until": "stable",
+              "max": 20,
+              "steps": [
+                {
+                  "do": "tap",
+                  "template": "templates/claim_list.png",
+                  "all": true,
+                  "threshold": 0.85,
+                  "band": [
+                    0.2,
+                    0.92
+                  ]
+                },
+                {
+                  "do": "swipe",
+                  "vector": [
+                    0.5,
+                    0.78,
+                    0.5,
+                    0.39
+                  ]
+                },
+                {
+                  "do": "wait",
+                  "seconds": 0.7
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "repeat",
+          "until": {
+            "gone": "templates/return_game.png",
+            "threshold": 0.65
+          },
+          "max": 5,
+          "steps": [
+            {
+              "do": "wait",
+              "seconds": 0.7
+            },
+            {
+              "do": "tap",
+              "template": "templates/return_game.png",
+              "threshold": 0.65
+            }
+          ]
+        },
+        {
+          "do": "tap",
+          "template": "templates/menu_close_x.png",
+          "threshold": 0.9
         }
       ]
     }
