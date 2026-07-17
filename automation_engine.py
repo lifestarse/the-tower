@@ -233,6 +233,15 @@ def _run_step(device, step, log, width, height, stop):
         device.tap_xy(x, int(best_yc))
         return 1
 
+    if do == 'if':
+        # Run inner steps only if a template is present (or absent, present:false).
+        tpl = step.get('template')
+        th = float(step.get('threshold', 0.8))
+        found = bool(tpl) and find_template(device.capture(), tpl, threshold=th) is not None
+        if found == bool(step.get('present', True)):
+            return run_steps(device, step.get('steps', []), log, width, height, stop)
+        return 0
+
     if do == 'repeat':
         inner = step.get('steps', [])
         max_iter = int(step.get('max', 20))

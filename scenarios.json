@@ -37,7 +37,7 @@
       "cooldown": 0.5,
       "multi_scale": true,
       "scale_min": 0.8,
-      "scale_max": 1.2,
+      "scale_max": 1.5,
       "scale_steps": 9,
       "action": "tap",
       "when": "",
@@ -336,166 +336,180 @@
         },
         {
           "do": "wait",
-          "seconds": 0.8
+          "seconds": 0.9
         },
         {
-          "do": "repeat",
-          "until": "no_tap",
-          "max": 8,
+          "do": "if",
+          "template": "templates/return_game.png",
+          "threshold": 0.65,
           "steps": [
             {
               "do": "repeat",
-              "until": "stable",
-              "max": 20,
+              "until": "no_tap",
+              "max": 8,
               "steps": [
                 {
-                  "do": "swipe",
-                  "vector": [
-                    0.5,
-                    0.39,
-                    0.5,
-                    0.78
+                  "do": "repeat",
+                  "until": "stable",
+                  "max": 20,
+                  "steps": [
+                    {
+                      "do": "swipe",
+                      "vector": [
+                        0.5,
+                        0.39,
+                        0.5,
+                        0.78
+                      ]
+                    },
+                    {
+                      "do": "wait",
+                      "seconds": 0.5
+                    }
                   ]
                 },
                 {
-                  "do": "wait",
-                  "seconds": 0.5
+                  "do": "repeat",
+                  "until": "stable",
+                  "max": 20,
+                  "steps": [
+                    {
+                      "do": "tap",
+                      "template": "templates/claim_list.png",
+                      "all": true,
+                      "threshold": 0.85,
+                      "band": [
+                        0.2,
+                        0.92
+                      ]
+                    },
+                    {
+                      "do": "swipe",
+                      "vector": [
+                        0.5,
+                        0.78,
+                        0.5,
+                        0.39
+                      ]
+                    },
+                    {
+                      "do": "wait",
+                      "seconds": 0.7
+                    }
+                  ]
                 }
               ]
             },
             {
               "do": "repeat",
-              "until": "stable",
-              "max": 20,
+              "until": {
+                "gone": "templates/return_game.png",
+                "threshold": 0.65
+              },
+              "max": 5,
               "steps": [
-                {
-                  "do": "tap",
-                  "template": "templates/claim_list.png",
-                  "all": true,
-                  "threshold": 0.85,
-                  "band": [
-                    0.2,
-                    0.92
-                  ]
-                },
-                {
-                  "do": "swipe",
-                  "vector": [
-                    0.5,
-                    0.78,
-                    0.5,
-                    0.39
-                  ]
-                },
                 {
                   "do": "wait",
                   "seconds": 0.7
+                },
+                {
+                  "do": "tap",
+                  "template": "templates/return_game.png",
+                  "threshold": 0.65
                 }
               ]
-            }
-          ]
-        },
-        {
-          "do": "repeat",
-          "until": {
-            "gone": "templates/return_game.png",
-            "threshold": 0.65
-          },
-          "max": 5,
-          "steps": [
-            {
-              "do": "wait",
-              "seconds": 0.7
-            },
-            {
-              "do": "tap",
-              "template": "templates/return_game.png",
-              "threshold": 0.65
             }
           ]
         },
         {
           "do": "tap",
           "template": "templates/star reward is ready.png",
-          "threshold": 0.97
+          "threshold": 0.96
         },
         {
           "do": "wait",
-          "seconds": 0.8
+          "seconds": 0.9
         },
         {
-          "do": "repeat",
-          "until": "no_tap",
-          "max": 8,
+          "do": "if",
+          "template": "templates/return_game.png",
+          "threshold": 0.65,
           "steps": [
             {
               "do": "repeat",
-              "until": "stable",
-              "max": 20,
+              "until": "no_tap",
+              "max": 8,
               "steps": [
                 {
-                  "do": "swipe",
-                  "vector": [
-                    0.5,
-                    0.39,
-                    0.5,
-                    0.78
+                  "do": "repeat",
+                  "until": "stable",
+                  "max": 20,
+                  "steps": [
+                    {
+                      "do": "swipe",
+                      "vector": [
+                        0.5,
+                        0.39,
+                        0.5,
+                        0.78
+                      ]
+                    },
+                    {
+                      "do": "wait",
+                      "seconds": 0.5
+                    }
                   ]
                 },
                 {
-                  "do": "wait",
-                  "seconds": 0.5
+                  "do": "repeat",
+                  "until": "stable",
+                  "max": 20,
+                  "steps": [
+                    {
+                      "do": "tap",
+                      "template": "templates/claim_list.png",
+                      "all": true,
+                      "threshold": 0.85,
+                      "band": [
+                        0.2,
+                        0.92
+                      ]
+                    },
+                    {
+                      "do": "swipe",
+                      "vector": [
+                        0.5,
+                        0.78,
+                        0.5,
+                        0.39
+                      ]
+                    },
+                    {
+                      "do": "wait",
+                      "seconds": 0.7
+                    }
+                  ]
                 }
               ]
             },
             {
               "do": "repeat",
-              "until": "stable",
-              "max": 20,
+              "until": {
+                "gone": "templates/return_game.png",
+                "threshold": 0.65
+              },
+              "max": 5,
               "steps": [
-                {
-                  "do": "tap",
-                  "template": "templates/claim_list.png",
-                  "all": true,
-                  "threshold": 0.85,
-                  "band": [
-                    0.2,
-                    0.92
-                  ]
-                },
-                {
-                  "do": "swipe",
-                  "vector": [
-                    0.5,
-                    0.78,
-                    0.5,
-                    0.39
-                  ]
-                },
                 {
                   "do": "wait",
                   "seconds": 0.7
+                },
+                {
+                  "do": "tap",
+                  "template": "templates/return_game.png",
+                  "threshold": 0.65
                 }
               ]
-            }
-          ]
-        },
-        {
-          "do": "repeat",
-          "until": {
-            "gone": "templates/return_game.png",
-            "threshold": 0.65
-          },
-          "max": 5,
-          "steps": [
-            {
-              "do": "wait",
-              "seconds": 0.7
-            },
-            {
-              "do": "tap",
-              "template": "templates/return_game.png",
-              "threshold": 0.65
             }
           ]
         },
