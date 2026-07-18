@@ -124,6 +124,32 @@ PERK_PRIORITY = {
 DEFAULT_PRIORITY = 3          # any good/UW perk not in PERK_PRIORITY
 
 
+def _merge_perk_lines(ocr_lines):
+    """Group OCR text lines into perk cards by vertical proximity.
+
+    ``ocr_lines`` is ``[(top, bottom, text), ...]``. A card's wrapped text
+    arrives as separate OCR lines ("... and lifesteal" / "-90%"), and such a
+    fragment alone can read as a clean no-downside perk — so cards must be
+    scored whole, never per line. Lines inside one card sit tightly stacked;
+    the margin between cards is far taller than a text line. Split wherever
+    the vertical gap exceeds ~0.8 of the median line height.
+    Returns ``[(y_center, text), ...]`` per card, top to bottom.
+    """
+    if not ocr_lines:
+        return []
+    ocr_lines = sorted(ocr_lines)
+    heights = sorted(b - t for (t, b, _) in ocr_lines)
+    gap_limit = max(6, int(heights[len(heights) // 2] * 0.8))
+    cards = []
+    for top, bot, txt in ocr_lines:
+        if cards and top - cards[-1][1] <= gap_limit:
+            cards[-1][1] = max(cards[-1][1], bot)
+            cards[-1][2].append(txt)
+        else:
+            cards.append([top, bot, [txt]])
+    return [((top + bot) // 2, ' '.join(parts)) for top, bot, parts in cards]
+
+
 def perk_badness(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
     """Which avoided categories a perk's text triggers (empty set = fine).
     All trade-off downsides read as "..., but ...". We only flag the ones the
@@ -246,13 +272,14 @@ def _run_step(device, step, log, width, height, stop):
             ws = ln.get('words') or []
             if not ws:
                 continue
-            ys = [w['bounding_rect']['y'] for w in ws]
-            he = [w['bounding_rect']['y'] + w['bounding_rect']['height'] for w in ws]
-            lines.append(((min(ys) + max(he)) // 2, ln['text']))
+            top = min(w['bounding_rect']['y'] for w in ws)
+            bot = max(w['bounding_rect']['y'] + w['bounding_rect']['height'] for w in ws)
+            lines.append((top, bot, ln['text']))
         header_y = None
         footer_y = height
-        for yc, txt in lines:
+        for top, bot, txt in lines:
             tl = txt.lower()
+            yc = (top + bot) // 2
             if 'choose' in tl and 'perk' in tl:
                 header_y = yc
             elif 'selected perk' in tl and yc > (header_y or 0):
@@ -260,8 +287,12 @@ def _run_step(device, step, log, width, height, stop):
         if header_y is None:
             log('  macro: pick_perk — perk screen not open (no "Choose a New Perk")')
             return 0
-        choices = [(yc, txt) for (yc, txt) in lines
-                   if header_y < yc < footer_y and len(txt.strip()) >= 4]
+        body = [(top, bot, txt) for (top, bot, txt) in lines
+                if header_y < (top + bot) // 2 < footer_y]
+        # Score whole cards, and only clusters that contain actual words — a
+        # letterless cluster is OCR junk, not a perk.
+        choices = [(yc, txt) for (yc, txt) in _merge_perk_lines(body)
+                   if len(txt.strip()) >= 4 and re.search(r'[a-zа-яё]', txt.lower())]
         if not choices:
             log('  macro: pick_perk — screen open but no choices read')
             return 0
