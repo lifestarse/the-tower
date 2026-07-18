@@ -4,6 +4,8 @@ import re
 from ppadb.client import Client as AdbClient
 from PIL import Image
 
+from humanize import jitter_point
+
 
 def _ensure_server_and_connect(device_id):
     # Start (do NOT kill) the adb server. `adb kill-server` drops TCP
@@ -33,11 +35,15 @@ class AndroidDevice:
         im = Image.open(im_bytes)
         return im
 
-    def tap_xy(self, x, y):
-        self.device.input_tap(x, y)
+    def tap_xy(self, x, y, jitter=True):
+        # Human-like wobble by default so every tap lands on a slightly different
+        # pixel of the button. Pass jitter=False for a pixel-exact tap.
+        if jitter:
+            x, y = jitter_point(x, y)
+        self.device.input_tap(int(x), int(y))
 
-    def tap_point(self, point):
-        self.device.input_tap(point[0], point[1])
+    def tap_point(self, point, jitter=True):
+        self.tap_xy(point[0], point[1], jitter=jitter)
 
     def swipe_xy(self, x1, y1, x2, y2, duration):
         self.device.input_swipe(x1, y1, x2, y2, duration)

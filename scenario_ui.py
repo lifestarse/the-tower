@@ -642,14 +642,15 @@ class App(tk.Tk):
         if i is None:
             messagebox.showinfo('Test', 'Select a scenario first.'); return
         s = self.engine.scenarios[i]
+        device_id = self.v_device.get().strip() or self.engine.device_id
         self._log('testing %r …' % s.name)
-        threading.Thread(target=self._run_test, args=(s,), daemon=True).start()
+        threading.Thread(target=self._run_test, args=(s, device_id), daemon=True).start()
 
-    def _run_test(self, s):
+    def _run_test(self, s, device_id):
         try:
             from android_device import AndroidDevice
             from image_recognition import find_template, find_rotated, multi_scale
-            dev = AndroidDevice(self.v_device.get().strip() or self.engine.device_id)
+            dev = AndroidDevice(device_id)
             screen = dev.capture()
         except Exception as e:  # noqa: BLE001
             self._log('test: device error: %s' % e); return
@@ -682,12 +683,13 @@ class App(tk.Tk):
             self._log('test error: %s' % e)
 
     def _screenshot(self):
-        threading.Thread(target=self._grab, daemon=True).start()
+        device_id = self.v_device.get().strip() or self.engine.device_id
+        threading.Thread(target=self._grab, args=(device_id,), daemon=True).start()
 
-    def _grab(self):
+    def _grab(self, device_id):
         try:
             from android_device import AndroidDevice
-            dev = AndroidDevice(self.v_device.get().strip() or self.engine.device_id)
+            dev = AndroidDevice(device_id)
             img = dev.capture(); img.save('screen.png')
             self._log('saved screen.png (%dx%d) — crop buttons into templates/'
                       % (img.width, img.height))

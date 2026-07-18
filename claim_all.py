@@ -33,6 +33,7 @@ except (AttributeError, ValueError):
 
 from android_device import AndroidDevice
 from image_recognition import find_template, find_all_templates
+from humanize import human_sleep
 
 DEVICE_ID = '127.0.0.1:5555'
 
@@ -94,7 +95,7 @@ def main(logger=print, device_id=DEVICE_ID):
     if star is None:
         log('menu not visible -> revealing UI')
         device.tap_xy(width // 2, int(height * 0.25))   # tap empty battlefield
-        time.sleep(0.8)
+        human_sleep(0.8)
         star = find_template(device.capture(), STAR, threshold=MATCH_THRESHOLD)
     if star is None:
         log('could not find the star menu button; aborting')
@@ -108,7 +109,7 @@ def main(logger=print, device_id=DEVICE_ID):
     # 3. open Event / Missions
     log('reward badge present -> opening event')
     device.tap_xy(*star.center)
-    time.sleep(1.2)
+    human_sleep(1.2)
 
     # 4. sweep the list top->bottom claiming everything, repeating until empty
     total = 0
@@ -116,7 +117,7 @@ def main(logger=print, device_id=DEVICE_ID):
         for _ in range(MAX_SCROLLS):            # rewind to the very top
             before = device.capture()
             swipe(0.39, 0.78)
-            time.sleep(0.5)
+            human_sleep(0.5)
             if _similar(before, device.capture()):
                 break
 
@@ -130,10 +131,10 @@ def main(logger=print, device_id=DEVICE_ID):
                     device.tap_xy(*h.center)
                     swept += 1
                     log('CLAIM at %s (conf %.2f)' % (h.center, h.confidence))
-                    time.sleep(0.35)
+                    human_sleep(0.35)
             before = device.capture()
             swipe(0.78, 0.39)
-            time.sleep(0.7)
+            human_sleep(0.7)
             if _similar(before, device.capture()):
                 break                           # bottom of the list
 
@@ -149,9 +150,14 @@ def main(logger=print, device_id=DEVICE_ID):
     if ret is not None:
         device.tap_xy(*ret.center)
     else:
-        device.tap_xy(width // 2, int(height * 0.95))   # fallback
-        device.back()
-    time.sleep(0.8)
+        device.tap_xy(width // 2, int(height * 0.95))   # fallback: blind-tap the footer
+        human_sleep(0.6)
+        # Only press Back if the blind tap did NOT already return us to the game
+        # (the missions footer is still on screen). Doing both unconditionally can
+        # send Back on the live game screen and open the pause menu.
+        if find_template(device.capture(), RETURN, threshold=0.6) is not None:
+            device.back()
+    human_sleep(0.8)
     log('done')
     return total
 

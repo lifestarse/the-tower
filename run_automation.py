@@ -15,6 +15,7 @@ while True:
     package = device.get_top_activity_package()
     if package != app_package:
         print('App is not running')
+        sleep(3)
         continue
 
     state = find_state(cap)

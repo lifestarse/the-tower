@@ -27,6 +27,7 @@ import numpy as np
 
 from image_recognition import (find_template, find_all_templates, find_rotated,
                                multi_scale, to_gray)
+from humanize import human_sleep
 
 DEFAULT_CONFIG = 'scenarios.json'
 
@@ -158,8 +159,9 @@ def perk_badness(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
     hits = set()
     if 'enemy_damage' in avoid and re.search(r'enem\w*\s+damage\s*x', t):
         hits.add('enemy_damage')                             # "Enemies Damage x2.5", "Ranged Enemies Damage x3"
-    if 'tower_hp' in avoid and 'max health -' in t:
-        hits.add('tower_hp')                                 # "Tower Max Health -70%" (not enemy/boss health)
+    if ('tower_hp' in avoid and 'max health -' in t
+            and not re.search(r'(enem|boss|ranged)\w*\s+max health', t)):
+        hits.add('tower_hp')                                 # only the TOWER's own "Max Health -70%" (not enemy/boss)
     if 'lifesteal' in avoid and (re.search(r'lifesteal\s*-', t)
                                  or 'and lifesteal' in t or 'life absorption -' in t):
         hits.add('lifesteal')                                # "... Lifesteal -90%"
@@ -167,9 +169,13 @@ def perk_badness(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
 
 
 def perk_score(text, avoid=('enemy_damage', 'tower_hp', 'lifesteal')):
-    """Higher = better. 0 = a trade-off hitting an avoided category (never pick
-    unless forced); 1 = harmless trade-off; otherwise the perk's PERK_PRIORITY
-    (DEFAULT_PRIORITY if unlisted). The pick_perk step takes the highest score."""
+    """Higher = better. Precedence matches the code below:
+      0 = a trade-off hitting an AVOIDED category (never pick unless forced);
+      else, if the text matches a PERK_PRIORITY key -> that priority, EVEN when the
+        perk also carries a harmless downside — a listed strong perk outranks a
+        plain one (e.g. "Free Upgrade Chance ..., but Coins -20%" still scores 4);
+      else 1 for any remaining harmless trade-off (kept below plain perks);
+      else DEFAULT_PRIORITY. The pick_perk step takes the highest score."""
     if perk_badness(text, avoid):
         return 0
     t = text.lower()
@@ -204,7 +210,7 @@ def _run_step(device, step, log, width, height, stop):
     do = (step.get('do') or '').lower()
 
     if do == 'wait':
-        time.sleep(float(step.get('seconds', 0.5)))
+        human_sleep(float(step.get('seconds', 0.5)))
         return 0
 
     if do == 'back':
@@ -238,7 +244,7 @@ def _run_step(device, step, log, width, height, stop):
                 hits = [h for h in hits if y0 <= h.center[1] <= y1]
             for h in sorted(hits, key=lambda m: m.center[1]):
                 device.tap_xy(*h.center)
-                time.sleep(float(step.get('gap', 0.35)))
+                human_sleep(float(step.get('gap', 0.35)))
             if hits:
                 log('  macro: tapped %dx %s' % (len(hits), os.path.basename(tpl)))
             return len(hits)
@@ -364,6 +370,78 @@ def _run_step(device, step, log, width, height, stop):
         if on_it == bool(step.get('present', True)):
             return run_steps(device, step.get('steps', []), log, width, height, stop)
         return 0
+
+    if do == 'whichmenu':
+        # Log which DB screen (menu_db / screen_db) the whole frame matches.
+        try:
+            from menu_db import identify_menu
+            info = identify_menu(device.capture(),
+                                 threshold=float(step.get('threshold', 10.0)))
+            if info['matched']:
+                log('  macro: menu = %s (dist %s)' % (info['name'], info['distance']))
+            else:
+                log('  macro: menu = unknown (closest %s %s)'
+                    % (info.get('closest'), info['distance']))
+        except Exception as e:  # noqa: BLE001
+            log('  macro: whichmenu failed: %s' % e)
+        return 0
+
+    if do == 'if_menu':
+        # Run inner steps only when the whole frame matches (or, present:false,
+        # does NOT match) the named screen from the menu_db (screen_db/*.png).
+        want = step.get('menu')
+        try:
+            from menu_db import identify_menu
+            info = identify_menu(device.capture(),
+                                 threshold=float(step.get('threshold', 10.0)))
+        except Exception as e:  # noqa: BLE001
+            log('  macro: if_menu failed: %s' % e)
+            return 0
+        on_it = (info['name'] == want)
+        if on_it == bool(step.get('present', True)):
+            return run_steps(device, step.get('steps', []), log, width, height, stop)
+        return 0
+
+    if do == 'goto':
+        # Navigate to a named screen via the transition graph (screen_graph.py /
+        # transitions.json): BFS a path from wherever we are, tap each hop and
+        # re-check after every step. Lets a macro prepend "get to screen X".
+        try:
+            from screen_graph import goto as _goto, load_graph
+        except Exception as e:  # noqa: BLE001
+            log('  macro: goto unavailable (%s)' % e)
+            return 0
+        want = step.get('menu') or step.get('screen')
+        if not want:
+            log('  macro: goto needs a "menu" target')
+            return 0
+        try:
+            ok = _goto(device, want, log, graph=load_graph(),
+                       max_hops=int(step.get('max_hops', 8)),
+                       allow_relaunch=bool(step.get('relaunch', False)), stop=stop)
+            return 1 if ok else 0
+        except Exception as e:  # noqa: BLE001
+            log('  macro: goto failed: %s' % e)
+            return 0
+
+    if do == 'explore':
+        # Optional bounded auto-crawler that seeds the transition graph by tapping
+        # ONLY an allowlist of safe (non-destructive) templates. Needs "safe".
+        try:
+            from screen_graph import explore as _explore, load_graph
+        except Exception as e:  # noqa: BLE001
+            log('  macro: explore unavailable (%s)' % e)
+            return 0
+        safe = step.get('safe') or []
+        if not safe:
+            log('  macro: explore needs a "safe" template allowlist — skipped')
+            return 0
+        try:
+            return _explore(device, load_graph(), log, safe=tuple(safe),
+                            budget=int(step.get('budget', 150)), stop=stop)
+        except Exception as e:  # noqa: BLE001
+            log('  macro: explore failed: %s' % e)
+            return 0
 
     if do == 'repeat':
         inner = step.get('steps', [])
@@ -511,7 +589,7 @@ class Engine:
             due = [s for s in self.scenarios
                    if s.enabled and now - last_check.get(s.name, 0.0) >= s.interval]
             if not due:
-                time.sleep(tick)
+                human_sleep(tick)
                 continue
 
             if self.require_foreground:
@@ -519,24 +597,24 @@ class Engine:
                     pkg = device.get_top_activity_package()
                 except Exception as e:  # noqa: BLE001
                     self.log('activity check error: %s' % e)
-                    time.sleep(1)
+                    human_sleep(1)
                     continue
                 if pkg != self.app_package:
                     for s in due:
                         last_check[s.name] = now
                     self.log('waiting: foreground is %s (want %s)' % (pkg, self.app_package))
-                    time.sleep(1)
+                    human_sleep(1)
                     continue
 
             try:
                 screen = device.capture()
             except Exception as e:  # noqa: BLE001
                 self.log('capture error: %s' % e)
-                time.sleep(1)
+                human_sleep(1)
                 continue
             if screen is None:
                 self.log('capture returned None')
-                time.sleep(1)
+                human_sleep(1)
                 continue
 
             for s in due:
@@ -612,6 +690,6 @@ class Engine:
                     self.log('  TAP   %s at %s' % (s.name, m.center))
                     tapped(s.name)
 
-            time.sleep(tick)
+            human_sleep(tick)
 
         self.log('engine stopped')

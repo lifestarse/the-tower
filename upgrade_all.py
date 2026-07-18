@@ -19,8 +19,8 @@ tapped 6 fixed cells). For each category tab (Attack / Defense / Utility) it:
 Maxed cells are remembered in state/upgrade_state.json for the current run (so we
 don't re-OCR them); clear it with --reset or reset_run_memory() on a new run.
 
-Priority DB (battle = cash spent DURING a run):
-  C:/Users/user/.gemini/antigravity-ide/brain/<id>/battle_upgrades_db.json
+Priority DB (battle = cash spent DURING a run) ships with the project:
+  data/battle_upgrades_db.json  (override with the TOWER_BATTLE_DB env var)
 
 Standalone (safe: --dry plans only, never buys — but it DOES open tabs & scroll):
     python upgrade_all.py --dry --tab attack
@@ -33,9 +33,10 @@ import json
 import os
 import re
 import sys
-import time
 
 import numpy as np
+
+from humanize import human_sleep
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -46,8 +47,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEVICE_ID = '127.0.0.1:5556'
 STATE_FILE = os.path.join(HERE, 'state', 'upgrade_state.json')
 
-BATTLE_DB = ('C:/Users/user/.gemini/antigravity-ide/brain/'
-             'e315e4f7-1ad5-4972-840a-1c8ac8e6288f/battle_upgrades_db.json')
+# Battle-upgrade priority DB now lives in the repo (data/), so the tool no longer
+# depends on a specific Gemini "brain" folder. Set TOWER_BATTLE_DB to point
+# elsewhere (e.g. to re-sync from a freshly generated brain) without editing code.
+BATTLE_DB = os.environ.get('TOWER_BATTLE_DB') or os.path.join(HERE, 'data',
+                                                              'battle_upgrades_db.json')
 
 # --------------------------------------------------------------------------- #
 # UI geometry — calibrated against a 900x1600 capture of the in-run panel.
@@ -108,7 +112,15 @@ def parse_money(s):
         val = float(num.replace(',', '.'))
     except ValueError:
         return None
-    return val * _SUFFIX.get((suf or '').lower(), 1.0)
+    suf = (suf or '').lower()
+    # The Tower always shows a mantissa < 1000 before a suffix (1000M is written
+    # as 1B), so a value >= 1000 WITH a suffix means OCR dropped/garbled the
+    # decimal comma — "47,30M" misread as "47130M" -> 47130. That yields a ~1000x
+    # wrong number (47.1B for $47.30M), which wrecked affordability. Reject it so
+    # the median read / purchase check ignores this frame instead of trusting it.
+    if suf and val >= 1000:
+        return None
+    return val * _SUFFIX.get(suf, 1.0)
 
 
 def _money(v):
@@ -271,7 +283,11 @@ def cells_in_view(capture):
             cell = (_lx(cx0 + 4, w), y0 + 3, _lx(cx1 - 4, w), y1 - 3)
             btn = (_lx(int(cx0 + (cx1-cx0)*NAME_FRAC) + 4, w),
                    int(y0 + ch*BTN_TOP_FRAC), _lx(cx1 - 8, w), y1 - 4)
-            tap = (_lx((cx0+cx1)//2, w), (y0+y1)//2)
+            # Tap the CENTRE OF THE BUY BUTTON (the blue "$cost" box, bottom-right),
+            # not the geometric centre of the cell — the cell centre lands on the
+            # upgrade NAME (left half) and does not buy. This is why taps logged
+            # "bought" but nothing was purchased.
+            tap = ((btn[0] + btn[2]) // 2, (btn[1] + btn[3]) // 2)
             yield (c, cell, btn, tap)
 
 
@@ -398,6 +414,26 @@ def _panel_moved(a_gray, b_gray, w, h, tol=2.0):
     return float(np.abs(a_gray[yt:yb, x0:x1] - b_gray[yt:yb, x0:x1]).mean()) >= tol
 
 
+def _settle_panel(device, w, h, tries=12, poll=0.12):
+    """Return a capture taken once the list has STOPPED scrolling.
+
+    Critical for buying: a fling leaves the panel coasting, and between the
+    capture we OCR and the tap we issue there is ~0.5-1s of OCR. If the panel is
+    still moving in that window the cell slides away and the tap lands on empty
+    space (buys nothing). We poll until the name strip stops changing, then the
+    cell positions we read are the positions we tap."""
+    cap = device.capture()
+    prev_g = None
+    for _ in range(tries):
+        g = np.asarray(cap.convert('L'), dtype=np.int16)
+        if prev_g is not None and not _panel_moved(prev_g, g, w, h):
+            return cap
+        prev_g = g
+        human_sleep(poll)
+        cap = device.capture()
+    return cap
+
+
 def _similar(a, b, tol=3.0):
     aa = np.asarray(a.convert('L'), dtype=np.int16)
     bb = np.asarray(b.convert('L'), dtype=np.int16)
@@ -412,12 +448,12 @@ def open_tab(device, category, log):
     if read_header(cap) == category:
         return True                       # already open on this tab — don't tap!
     device.tap_xy(*_spt(TAB_X[category], TAB_Y, w, h))
-    time.sleep(0.35)
+    human_sleep(0.35)
     if read_header(device.capture()) == category:
         return True
     # one retry (maybe it was open on this very tab and we just closed it)
     device.tap_xy(*_spt(TAB_X[category], TAB_Y, w, h))
-    time.sleep(0.35)
+    human_sleep(0.35)
     ok = read_header(device.capture()) == category
     if not ok:
         log('  upgrade: could not open %s tab' % category)
@@ -427,7 +463,7 @@ def open_tab(device, category, log):
 def process_tab(device, prio, category, log, dry=False, floor=PRIORITY_FLOOR,
                 state=None, cash=None, max_pages=14, verbose=False):
     if not open_tab(device, category, log):
-        return 0, []
+        return 0, [], cash
     w, h = device.capture().size
     state = state or load_state()
     never = {_norm(n) for n in NEVER_BUY}
@@ -438,16 +474,18 @@ def process_tab(device, prio, category, log, dry=False, floor=PRIORITY_FLOOR,
     plan = []
     bought = 0
 
-    # Blind rewind to the top: 3 big flings, NO screenshots. adb screencap is the
-    # slowest thing here (~200-400ms), so we do not capture/compare each step.
+    # Rewind to the top with a few big flings, then WAIT for the momentum to die.
+    # A still-coasting panel is the real reason taps "bought nothing": the tap is
+    # issued ~1s after the capture (OCR is slow), so on a moving list it lands
+    # where the cell WAS, not where it is. Settling first fixes that.
     for _ in range(3):
         _swipe(device, w, h, 1080, 1520, 140)
-        time.sleep(0.05)
-    time.sleep(0.1)
+        human_sleep(0.05)
+    cap = _settle_panel(device, w, h)
 
+    spent_all = False                  # set when a Max-mode buy drains ~all cash
     prev = None                        # previous page's grayscale (bottom detection)
     for _page in range(max_pages):
-        cap = device.capture()
         gray = np.asarray(cap.convert('L'), dtype=np.int16)
         if prev is not None and not _panel_moved(prev, gray, w, h):
             break                      # list didn't move since last scroll -> bottom
@@ -480,39 +518,85 @@ def process_tab(device, prio, category, log, dry=False, floor=PRIORITY_FLOOR,
                 plan.append({'name': name_en, 'priority': p,
                              'action': 'skip($%s)' % _money(cost)})
                 continue
-            plan.append({'name': name_en, 'priority': p,
-                         'action': 'would-buy' if dry else 'buy'})
-            if not dry:
-                device.tap_xy(*cell['tap_pt'])
+            if dry:
+                plan.append({'name': name_en, 'priority': p, 'action': 'would-buy'})
+                if cash is not None and cost is not None:
+                    cash -= cost        # simulate the spend for a realistic plan
+                continue
+            # CONFIRMED buy: a real purchase makes cash DROP; idle income only ever
+            # raises it, so cash falling after the tap proves the buy registered.
+            # This stops the log lying ("bought" on a tap that did nothing) and, in
+            # Max multiplier mode, tells us the tab is spent so we can stop early.
+            before = cash if cash is not None else read_cash_stable(device)
+            device.tap_xy(*cell['tap_pt'])
+            human_sleep(0.25)
+            after = read_cash_stable(device)
+            if before is not None and after is not None and after < before * 0.98:
                 bought += 1
-                time.sleep(0.12)
+                cash = after            # self-correct to the real post-buy balance
+                plan.append({'name': name_en, 'priority': p,
+                             'action': 'buy(-$%s)' % _money(before - after)})
+                if after < before * 0.5:   # Max mode spent ~all cash -> nothing
+                    spent_all = True       #   else on this tab is affordable;
+                    break                  #   stop the whole tab
+            elif before is None or after is None:
+                bought += 1             # cash unreadable this frame -> can't verify
+                cash = after if after is not None else cash
+                plan.append({'name': name_en, 'priority': p, 'action': 'buy?(unverified)'})
+            else:
+                cash = after            # cash did NOT drop -> the tap bought nothing
+                plan.append({'name': name_en, 'priority': p,
+                             'action': 'no-buy(unchanged)'})
+                break                   # lower-priority cells are even less affordable
 
+        if spent_all:
+            break                      # Max mode drained the cash -> tab is done
         # Early stop (cache optimization): once every buyable the cache expects
         # has been found, the rest of the list is maxed — stop scrolling now.
         if expected and not remaining:
             break
-        # Otherwise scroll one page (blind); the bottom is detected at the top of
-        # the next iteration when the page no longer moves.
+        # Otherwise scroll one page, then wait for it to settle before reading —
+        # same reason as the rewind: never OCR/tap a moving list.
         _swipe(device, w, h, PAGE_FROM, PAGE_TO, PAGE_MS)
-        time.sleep(0.06)
+        cap = _settle_panel(device, w, h)
 
-    state['tabs'][category] = {'buyable': sorted(found), 'scanned': True}
-    return bought, plan
+    # If we bailed early on a Max-mode spend we did NOT scan the whole list, so
+    # don't mark the tab fully scanned — let the next cycle re-scan it.
+    state['tabs'][category] = {'buyable': sorted(found), 'scanned': not spent_all}
+    return bought, plan, cash
 
 
-def read_cash_stable(device, n=2):
+def read_cash_stable(device, n=3):
     """Median of a few quick cash reads — smooths transient OCR misreads (e.g. a
-    frame where the '$' line is mid-animation and OCRs as '1')."""
+    frame where the '$' line is mid-animation and OCRs as '1'). n is odd so a
+    single outlier (high OR low) can't be returned; for an even count of valid
+    reads we take the lower-middle, which is the conservative choice for spending."""
     vals = []
     for _ in range(n):
         c = read_cash(device.capture())
         if c is not None:
             vals.append(c)
-        time.sleep(0.08)
+        human_sleep(0.08)
     if not vals:
         return None
     vals.sort()
-    return vals[len(vals) // 2]
+    return vals[(len(vals) - 1) // 2]
+
+
+def read_wave_stable(device, n=3):
+    """Median of a few wave reads — a single frame with a dropped/added digit
+    (e.g. 1182 mis-OCR'd as 182) must not look like a new run, which would
+    wrongly invalidate the whole per-run cache and force a full re-scan."""
+    vals = []
+    for _ in range(n):
+        w = read_wave(device.capture())
+        if w is not None:
+            vals.append(w)
+        human_sleep(0.06)
+    if not vals:
+        return None
+    vals.sort()
+    return vals[(len(vals) - 1) // 2]
 
 
 def run_upgrade_all(device, log=print, cats=CATEGORIES, dry=False,
@@ -524,7 +608,7 @@ def run_upgrade_all(device, log=print, cats=CATEGORIES, dry=False,
 
     # New-run detection: the wave counter resets (drops) each run → the temp DB
     # of available/maxed upgrades is stale, so rebuild it from scratch.
-    wave = read_wave(device.capture())
+    wave = read_wave_stable(device)
     prev = state.get('wave')
     if wave is not None and prev is not None and wave < prev:
         log('  upgrade: new run (wave %s < %s) — cache invalidated' % (wave, prev))
@@ -551,8 +635,8 @@ def run_upgrade_all(device, log=print, cats=CATEGORIES, dry=False,
         if info.get('scanned') and not names:
             log('  upgrade[%s]: nothing buyable (cached) — skipped, no scroll' % cat)
             continue
-        bought, plan = process_tab(device, prio, cat, log, dry=dry, floor=floor,
-                                   state=state, cash=cash, verbose=verbose)
+        bought, plan, cash = process_tab(device, prio, cat, log, dry=dry, floor=floor,
+                                         state=state, cash=cash, verbose=verbose)
         total += bought
         shown = ', '.join('%s(p%d,%s)' % (p['name'], p['priority'], p['action'])
                           for p in plan[:10])

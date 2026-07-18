@@ -14,10 +14,9 @@ all optional -- any that have no matching templates/<name>.png are skipped:
 
     python run_smart_automation.py
 """
-import time
-
 from android_device import AndroidDevice
 from image_recognition import TemplateLibrary, locate_and_tap, multi_scale
+from humanize import human_sleep
 
 DEVICE_ID = '127.0.0.1:5555'   # BlueStacks 5 default; 'emulator-5554' for a stock AVD
 APP_PACKAGE = 'com.TechTreeGames.TheTower'
@@ -41,12 +40,12 @@ def main():
         screen = device.capture()
         if screen is None:
             print('capture failed')
-            time.sleep(2)
+            human_sleep(2)
             continue
 
         if device.get_top_activity_package() != APP_PACKAGE:
             print('The Tower is not in the foreground')
-            time.sleep(3)
+            human_sleep(3)
             continue
 
         acted = False
@@ -58,11 +57,11 @@ def main():
             if m:
                 print('tapped %-16s conf=%.3f at %s' % (name, m.confidence, m.center))
                 acted = True
-                time.sleep(0.4)
+                human_sleep(0.4)
 
         if not acted:
             print('nothing to tap')
-        time.sleep(1.5)
+        human_sleep(1.5)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,421 @@
+{
+  "battle_upgrades": {
+    "info": "Боевые апгрейды (Battle Upgrades) — это те же параметры, что и в мастерской, но которые вы прокачиваете за наличные (Cash) непосредственно ВО ВРЕМЯ боя. Все боевые апгрейды сбрасываются после завершения раунда. В этой базе данных оценивается приоритет траты наличных во время раунда.",
+    "attack": [
+      {
+        "id": "damage",
+        "name_en": "Damage",
+        "name_ru": "Урон",
+        "cash_priority": 75,
+        "best_timing": "Середина и конец раунда (Mid to Late Run)",
+        "feasibility": "Необходим для работы вампиризма (Lifesteal), чтобы восстанавливать здоровье после сильных ударов боссов. У игроков с упором на урон (GC build) имеет приоритет 100 на протяжении всей игры. В гибридных сборках качается постепенно для поддержания адекватного отхила.",
+        "free_upgrade_synergy": "Имеет лимит в 6000 уровней, поэтому замаксить за наличные его тяжело. Лучше прокачать все остальные дешевые характеристики в Атаке, чтобы бесплатные апгрейды (Free Upgrades) автоматически качали только Урон."
+      },
+      {
+        "id": "attack_speed",
+        "name_en": "Attack Speed",
+        "name_ru": "Скорость атаки",
+        "cash_priority": 100,
+        "best_timing": "Сразу в начале раунда (Very Early Run)",
+        "feasibility": "Самый критичный параметр для удержания толпы с помощью Knockback. Если скорость атаки не замакшена в мастерской, вливайте наличные сюда как можно быстрее. Помогает предотвратить прорыв врагов.",
+        "free_upgrade_synergy": "Имеет относительно низкий кап (99 уровней). Максимизация за наличные освобождает ветку атаки для автоматической бесплатной прокачки Урона."
+      },
+      {
+        "id": "critical_chance",
+        "name_en": "Critical Chance",
+        "name_ru": "Шанс критического удара",
+        "cash_priority": 60,
+        "best_timing": "Начало и середина раунда (Early to Mid Run)",
+        "feasibility": "Увеличивает средний урон и частоту критов, что ускоряет отхил. Качать за наличные умеренно.",
+        "free_upgrade_synergy": "Быстро максимизируется (79 уровней). Лучше докачать наличными до капа в первой половине игры, чтобы убрать из пула бесплатных апгрейдов."
+      },
+      {
+        "id": "critical_factor",
+        "name_en": "Critical Factor",
+        "name_ru": "Множитель критического урона",
+        "cash_priority": 60,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Масштабирует урон от критических выстрелов. Качать по мере надобности в уроне.",
+        "free_upgrade_synergy": "Помогает убрать ещё один пункт из ветки атаки, разгружая бесплатную прокачку."
+      },
+      {
+        "id": "range",
+        "name_en": "Range",
+        "name_ru": "Дальность",
+        "cash_priority": 0,
+        "best_timing": "Не качать вручную (Do Not Upgrade)",
+        "feasibility": "Увеличение дальности за наличные во время раунда противопоказано для большинства стратегий фарма, так как это снижает КПД ударной волны и вращающихся сфер. Оставляйте дальность на минимальном значении.",
+        "free_upgrade_synergy": "Если у вас включены бесплатные улучшения, дальность всё равно будет качаться автоматически. После раунда её можно настроить обратно в лаборатории."
+      },
+      {
+        "id": "damage_per_meter",
+        "name_en": "Damage/Meter",
+        "name_ru": "Урон за метр",
+        "cash_priority": 30,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Имеет минимальное значение для выживаемости при игре на близкой дистанции. Тратить наличные стоит только ради быстрой забивки капа.",
+        "free_upgrade_synergy": "Имеет кап в 200 уровней. Легко забивается наличными ближе к середине волн."
+      },
+      {
+        "id": "multishot_chance",
+        "name_en": "Multishot Chance",
+        "name_ru": "Шанс мультивыстрела",
+        "cash_priority": 95,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Критично для контроля толпы. Качать за наличные сразу же, как только плотность врагов начнет расти.",
+        "free_upgrade_synergy": "Кап всего 99 уровней. Максимизация за Cash гарантирует зачистку толпы и очищает ветку атаки."
+      },
+      {
+        "id": "multishot_targets",
+        "name_en": "Multishot Targets",
+        "name_ru": "Цели мультивыстрела",
+        "cash_priority": 95,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Дает огромный прирост к площади поражения. Требует минимум наличных для полной прокачки.",
+        "free_upgrade_synergy": "Кап всего 7 уровней. Максимизировать вручную в первую очередь."
+      },
+      {
+        "id": "rapid_fire_chance",
+        "name_en": "Rapid Fire Chance",
+        "name_ru": "Шанс быстрой стрельбы",
+        "cash_priority": 90,
+        "best_timing": "Начало-середина раунда (Early to Mid Run)",
+        "feasibility": "Повышает темп стрельбы для разбора кучных групп и элитных врагов. Жизненно необходим на средних волнах.",
+        "free_upgrade_synergy": "Кап 85 уровней. Качать вручную для быстрого освобождения слота."
+      },
+      {
+        "id": "rapid_fire_duration",
+        "name_en": "Rapid Fire Duration",
+        "name_ru": "Длительность быстрой стрельбы",
+        "cash_priority": 85,
+        "best_timing": "Начало-середина раунда (Early to Mid Run)",
+        "feasibility": "Качать параллельно с шансом быстрой стрельбы. Продлевает фазу шквального огня.",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "bounce_shot_chance",
+        "name_en": "Bounce Shot Chance",
+        "name_ru": "Шанс рикошета",
+        "cash_priority": 80,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Распределяет урон по толпе. Важно замаксить до наступления тяжелых волн.",
+        "free_upgrade_synergy": "Кап 85 уровней. Забивать за наличные при стабилизации экономики раунда."
+      },
+      {
+        "id": "bounce_shot_targets",
+        "name_en": "Bounce Shot Targets",
+        "name_ru": "Цели рикошета",
+        "cash_priority": 75,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Быстро прокачивается за Cash, увеличивая количество отскоков.",
+        "free_upgrade_synergy": "Кап всего 7 уровней. Максить вручную."
+      },
+      {
+        "id": "bounce_shot_range",
+        "name_en": "Bounce Shot Range",
+        "name_ru": "Дальность рикошета",
+        "cash_priority": 70,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Помогает снарядам отскакивать на большее расстояние.",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "super_crit_chance",
+        "name_en": "Super Crit Chance",
+        "name_ru": "Шанс супер-крита",
+        "cash_priority": 10,
+        "best_timing": "Конец раунда (Late Run)",
+        "feasibility": "Улучшение за наличные стоит чрезвычайно дорого. Вливать деньги вручную категорически не рекомендуется, пока не замакшено все остальное.",
+        "free_upgrade_synergy": "Идеальный кандидат для прокачки через Free Upgrades. Когда все остальные боевые капы забиты наличными, бесплатные улучшения быстро поднимут супер-криты до максимума."
+      },
+      {
+        "id": "super_crit_mult",
+        "name_en": "Super Crit Mult",
+        "name_ru": "Множитель супер-крита",
+        "cash_priority": 10,
+        "best_timing": "Конец раунда (Late Run)",
+        "feasibility": "Аналогично шансу супер-крита — ручная прокачка за Cash крайне неэффективна по деньгам.",
+        "free_upgrade_synergy": "Должен качаться через бесплатные улучшения в раунде."
+      },
+      {
+        "id": "rend_armor_chance",
+        "name_en": "Rend Armor Chance",
+        "name_ru": "Шанс пробития брони",
+        "cash_priority": 10,
+        "best_timing": "Конец раунда (Late Run)",
+        "feasibility": "Для игроков поздней стадии. Апгрейд за Cash имеет заоблачную цену.",
+        "free_upgrade_synergy": "Оставить для автоматической прокачки за счет Free Upgrades на длинных волнах."
+      },
+      {
+        "id": "rend_armor_mult",
+        "name_en": "Rend Armor Mult",
+        "name_ru": "Множитель пробития брони",
+        "cash_priority": 10,
+        "best_timing": "Конец раунда (Late Run)",
+        "feasibility": "То же самое, что и шанс пробития брони.",
+        "free_upgrade_synergy": "Пусть прокачивается бесплатно."
+      }
+    ],
+    "defense": [
+      {
+        "id": "health",
+        "name_en": "Health",
+        "name_ru": "Здоровье",
+        "cash_priority": 95,
+        "best_timing": "Постоянно на протяжении раунда (All Run)",
+        "feasibility": "Основа вашей выживаемости. Поскольку этот параметр имеет кап в 6000 уровней, замаксить его за наличные невозможно. Деньги вливаются сюда постоянно, когда нет угрозы прорыва и экономика стабильна.",
+        "free_upgrade_synergy": "Так как другие защитные капы (Defense %, Thorns, Orbs и т.д.) забиваются наличными очень быстро, бесплатные улучшения защиты во второй половине забега будут качать почти исключительно Здоровье, экономя вам миллиарды наличных."
+      },
+      {
+        "id": "health_regen",
+        "name_en": "Health Regen",
+        "name_ru": "Регенерация здоровья",
+        "cash_priority": 15,
+        "best_timing": "Не качать вручную (или качать только с Wormhole Redirector)",
+        "feasibility": "Регенерация не успевает компенсировать урон врагов без специального модуля. Тратить наличные на нее в обычной игре — пустая трата ресурсов.",
+        "free_upgrade_synergy": "Имеет лимит в 6000 уровней. К сожалению, крадет часть бесплатных улучшений защиты, предназначенных для Здоровья."
+      },
+      {
+        "id": "defense_percent",
+        "name_en": "Defense %",
+        "name_ru": "Защита %",
+        "cash_priority": 100,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Снижает весь входящий урон. Первоочередная цель для прокачки за наличные, чтобы снизить нагрузку на Lifesteal.",
+        "free_upgrade_synergy": "Максимизируется за 100 уровней. Забивается за Cash в первые 50-100 волн раунда."
+      },
+      {
+        "id": "defense_absolute",
+        "name_en": "Defense Absolute",
+        "name_ru": "Абсолютная защита",
+        "cash_priority": 5,
+        "best_timing": "Только на Tier 1 в начале раунда; на Tier 2+ не трогать",
+        "feasibility": "Бесполезна везде, кроме Tier 1. На Tier 1 позволяет полностью игнорировать урон врагов на ранних волнах.",
+        "free_upgrade_synergy": "На Tier 2+ только забивает пул бесплатных улучшений из-за лимита в 6000 уровней."
+      },
+      {
+        "id": "thorn_damage",
+        "name_en": "Thorn Damage",
+        "name_ru": "Урон шипами",
+        "cash_priority": 100,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Основное средство уничтожения боссов при игре через здоровье. Должно быть прокачано до максимума (99%) как можно быстрее за наличные.",
+        "free_upgrade_synergy": "Кап 99 уровней. Быстро забивается за Cash."
+      },
+      {
+        "id": "lifesteal",
+        "name_en": "Lifesteal",
+        "name_ru": "Кража жизни",
+        "cash_priority": 90,
+        "best_timing": "Начало-середина раунда (Early to Mid Run)",
+        "feasibility": "Обеспечивает моментальный отхил башни после удара босса. Качать за наличные, если башне наносят урон.",
+        "free_upgrade_synergy": "Имеет лимит 80 уровней. Легко забивается наличными."
+      },
+      {
+        "id": "knockback_chance",
+        "name_en": "Knockback Chance",
+        "name_ru": "Шанс отбрасывания",
+        "cash_priority": 95,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Не позволяет толпе дойти до башни. Должен быть замакшен за наличные немедленно.",
+        "free_upgrade_synergy": "Имеет кап 99 уровней. Вручную забивается очень дешево."
+      },
+      {
+        "id": "knockback_force",
+        "name_en": "Knockback Force",
+        "name_ru": "Сила отбрасывания",
+        "cash_priority": 95,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Определяет дистанцию отбрасывания. Качать параллельно с шансом.",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "orb_speed",
+        "name_en": "Orb Speed",
+        "name_ru": "Скорость орбит",
+        "cash_priority": 95,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Позволяет сферам быстрее вращаться и чаще убивать мобов. Приоритет за Cash.",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "orbs",
+        "name_en": "Orbs",
+        "name_ru": "Количество орбит",
+        "cash_priority": 100,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Качать до 4 сфер незамедлительно. Самое дешевое и эффективное средство обороны.",
+        "free_upgrade_synergy": "Кап всего 4 уровня. Максимизируется за копейки на первых же волнах."
+      },
+      {
+        "id": "shockwave_size",
+        "name_en": "Shockwave Size",
+        "name_ru": "Размер ударной волны",
+        "cash_priority": 20,
+        "best_timing": "Не качать вручную (или в самом конце)",
+        "feasibility": "Избыточный радиус ударной волны ухудшает фарм монет, так как выталкивает врагов из черных дыр. Лучше не тратить Cash.",
+        "free_upgrade_synergy": "Будет медленно качаться сам за счет Free Upgrades."
+      },
+      {
+        "id": "shockwave_frequency",
+        "name_en": "Shockwave Frequency",
+        "name_ru": "Частота ударной волны",
+        "cash_priority": 20,
+        "best_timing": "Не качать вручную",
+        "feasibility": "Аналогично размеру волны."
+      },
+      {
+        "id": "land_mine_chance",
+        "name_en": "Land Mine Chance",
+        "name_ru": "Шанс сухопутных мин",
+        "cash_priority": 15,
+        "best_timing": "Оставить для Free Upgrades",
+        "feasibility": "Прокачка за наличные стоит неоправданно дорого по сравнению с приносимой пользой.",
+        "free_upgrade_synergy": "Кап 99 уровней. Пусть качается автоматически за счет бесплатных улучшений."
+      },
+      {
+        "id": "land_mine_damage",
+        "name_en": "Land Mine Damage",
+        "name_ru": "Урон сухопутных мин",
+        "cash_priority": 10,
+        "best_timing": "Оставить для Free Upgrades",
+        "feasibility": "Аналогично шансу мин."
+      },
+      {
+        "id": "land_mine_radius",
+        "name_en": "Land Mine Radius",
+        "name_ru": "Радиус сухопутных мин",
+        "cash_priority": 10,
+        "best_timing": "Оставить для Free Upgrades",
+        "feasibility": "Аналогично шансу мин."
+      },
+      {
+        "id": "death_defy",
+        "name_en": "Death Defy",
+        "name_ru": "Обман смерти",
+        "cash_priority": 25,
+        "best_timing": "Конец раунда (Late Run)",
+        "feasibility": "Стоимость прокачки за наличные огромна, качать вручную только при избытке Cash на поздних волнах.",
+        "free_upgrade_synergy": "Имеет лимит 30 уровней. Отличный кандидат для бесплатных апгрейдов защиты."
+      },
+      {
+        "id": "wall_health",
+        "name_en": "Wall Health",
+        "name_ru": "Здоровье стены",
+        "cash_priority": 10,
+        "best_timing": "Не качать вручную",
+        "feasibility": "Стена без лабораторных исследований вредит выживаемости башни. Не тратьте на нее наличные.",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "wall_rebuild",
+        "name_en": "Wall Rebuild",
+        "name_ru": "Восстановление стены",
+        "cash_priority": 10,
+        "best_timing": "Не качать вручную",
+        "feasibility": "Бесполезно без сильной стены."
+      }
+    ],
+    "utility": [
+      {
+        "id": "cash_bonus",
+        "name_en": "Cash Bonus",
+        "name_ru": "Бонус наличных",
+        "cash_priority": 100,
+        "best_timing": "Первые 50-100 волн (Very Early Run)",
+        "feasibility": "Увеличивает весь приток наличных во время раунда. Это самый важный экономический параметр для прокачки за Cash. Чем раньше вы его замаксите, тем больше апгрейдов сможете купить.",
+        "free_upgrade_synergy": "Кап 100 уровней. Быстро максимизируется вручную, освобождая утилиты."
+      },
+      {
+        "id": "cash_per_wave",
+        "name_en": "Cash / Wave",
+        "name_ru": "Наличные за волну",
+        "cash_priority": 70,
+        "best_timing": "Первые 20-50 волн (Very Early Run)",
+        "feasibility": "Помогает получить стартовый капитал на первых волнах, но быстро теряет смысл. Качать за наличные только на самом старте раунда.",
+        "free_upgrade_synergy": "Кап 100 уровней. Позже забьется сам бесплатно."
+      },
+      {
+        "id": "interest_per_wave",
+        "name_en": "Interest / Wave",
+        "name_ru": "Проценты за волну",
+        "cash_priority": 15,
+        "best_timing": "Не качать вручную",
+        "feasibility": "Из-за низкого лимита накопления процентов польза от этого параметра стремится к нулю. Тратить Cash нет смысла.",
+        "free_upgrade_synergy": "Кап 99 уровней. Оставить для бесплатной прокачки."
+      },
+      {
+        "id": "free_attack_upgrade",
+        "name_en": "Free Attack Upgrade",
+        "name_ru": "Бесплатный апгрейд атаки",
+        "cash_priority": 90,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Увеличивает вероятность бесплатных боевых улучшений. Быстро окупается за счет подаренных апгрейдов.",
+        "free_upgrade_synergy": "Кап 99 уровней. Повышает общую экономичность забега."
+      },
+      {
+        "id": "free_defense_upgrade",
+        "name_en": "Free Defense Upgrade",
+        "name_ru": "Бесплатный апгрейд защиты",
+        "cash_priority": 90,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Аналогично атаке. Помогает бесплатно прокачивать Здоровье и другие дорогие защитные параметры.",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "free_utility_upgrade",
+        "name_en": "Free Utility Upgrade",
+        "name_ru": "Бесплатный апгрейд утилит",
+        "cash_priority": 90,
+        "best_timing": "Начало раунда (Early Run)",
+        "feasibility": "Позволяет бесплатно качать дорогие пакеты лечения (Recovery Packages).",
+        "free_upgrade_synergy": "Кап 99 уровней."
+      },
+      {
+        "id": "recovery_amount",
+        "name_en": "Recovery Amount",
+        "name_ru": "Объем восстановления пакета",
+        "cash_priority": 85,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Увеличивает эффективность пакетов лечения. Качать за наличные, когда боссы начинают пробивать оверхил башни.",
+        "free_upgrade_synergy": "Имеет лимит в 300 уровней. Хорошо качается бесплатными утилитами."
+      },
+      {
+        "id": "max_recovery",
+        "name_en": "Max Recovery",
+        "name_ru": "Максимальное восстановление",
+        "cash_priority": 85,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Повышает предел оверхила (до 16.5x). Жизненно необходим на средних и высоких волнах.",
+        "free_upgrade_synergy": "Имеет лимит 100 уровней. Легко максимизировать за Cash."
+      },
+      {
+        "id": "package_chance",
+        "name_en": "Package Chance",
+        "name_ru": "Шанс пакета восстановления",
+        "cash_priority": 85,
+        "best_timing": "Середина раунда (Mid Run)",
+        "feasibility": "Определяет частоту выпадения лечебных пакетов. Качать для стабилизации оверхила.",
+        "free_upgrade_synergy": "Имеет лимит 60 уровней."
+      },
+      {
+        "id": "enemy_attack_level_skip",
+        "name_en": "Enemy Attack Level Skip",
+        "name_ru": "Пропуск уровня атаки врагов",
+        "cash_priority": 95,
+        "best_timing": "Середина и конец раунда (Mid to Late Run)",
+        "feasibility": "Отменяет прокачку атаки врагов в конце волны. Очень дорого качать за Cash, но окупается за счет значительного удлинения раунда.",
+        "free_upgrade_synergy": "Имеет лимит в 699 уровней. На длинных волнах Free Utility Upgrades бесплатно выкачают этот параметр, экономя гигантские объемы Cash."
+      },
+      {
+        "id": "enemy_health_level_skip",
+        "name_en": "Enemy Health Level Skip",
+        "name_ru": "Пропуск уровня здоровья врагов",
+        "cash_priority": 90,
+        "best_timing": "Середина и конец раунда (Mid to Late Run)",
+        "feasibility": "Отменяет повышение здоровья врагов. Помогает дольше убивать их снарядами.",
+        "free_upgrade_synergy": "Имеет лимит в 699 уровней."
+      }
+    ]
+  }
+}
